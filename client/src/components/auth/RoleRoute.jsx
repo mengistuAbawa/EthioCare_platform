@@ -1,4 +1,5 @@
 import { Navigate } from "react-router-dom";
+import AccessDenied from "./AccessDenied";
 import { useAuth } from "../../context/AuthContext";
 
 export default function RoleRoute({ allowedRoles, children, fallbackPath = "/login" }) {
@@ -16,18 +17,7 @@ export default function RoleRoute({ allowedRoles, children, fallbackPath = "/log
     return <Navigate to={fallbackPath} replace />;
   }
 
-  if (!allowedRoles.includes(user.role)) {
-    const redirectMap = {
-      system_admin: "/admin/dashboard",
-      clinic_admin: "/clinic/dashboard",
-      doctor: "/doctor/dashboard",
-      receptionist: "/reception/dashboard",
-      patient: "/patient/dashboard",
-    };
-
-    const destination = redirectMap[user.role] || "/login";
-    return <Navigate to={destination} replace />;
-  }
+  if (!allowedRoles.includes(user.role)) return <AccessDenied />;
 
   return children;
 }

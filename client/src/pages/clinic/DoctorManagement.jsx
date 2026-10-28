@@ -238,11 +238,11 @@ export default function DoctorManagement() {
   };
 
   return (
-    <main className="min-h-screen bg-slate-50 px-4 py-8 sm:px-6">
+    <div>
       <div className="mx-auto max-w-7xl">
         <header className="mb-8">
           <p className="text-sm font-semibold uppercase tracking-wider text-teal-700">Clinic workspace</p>
-          <h1 className="mt-2 text-3xl font-bold text-slate-950">Doctors</h1>
+          <h2 className="mt-2 text-3xl font-bold text-slate-950">Doctors</h2>
           <p className="mt-2 text-slate-600">
             {isManager
               ? "Manage authorized doctor profiles and services for this clinic."
@@ -497,6 +497,6 @@ export default function DoctorManagement() {
           </div>
         </div>
       </div>
-    </main>
+    </div>
   );
 }

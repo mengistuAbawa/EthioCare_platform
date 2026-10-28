@@ -81,6 +81,7 @@ const getPublicDoctors = async (req, res) => {
     "d.is_active = TRUE",
     "d.is_profile_approved = TRUE",
     "c.verification_status = 'verified'",
+    "c.operational_status = 'active'",
   ];
   const values = [];
   const addFilter = (sql, value) => {
@@ -149,7 +150,8 @@ const getPublicDoctorById = async (req, res) => {
         WHERE d.id = $1
           AND d.is_active = TRUE
           AND d.is_profile_approved = TRUE
-          AND c.verification_status = 'verified'`,
+          AND c.verification_status = 'verified'
+          AND c.operational_status = 'active'`,
       [req.params.id]
     );
 

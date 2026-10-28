@@ -10,6 +10,13 @@ const serializeClinic = (clinic) => ({
   region: clinic.region,
   address: clinic.address,
   verification_status: clinic.verification_status,
+  operational_status: clinic.operational_status || "active",
+  rejection_reason: clinic.rejection_reason || null,
+  reviewed_by: clinic.reviewed_by || null,
+  reviewed_at: clinic.reviewed_at || null,
+  suspension_reason: clinic.suspension_reason || null,
+  suspended_by: clinic.suspended_by || null,
+  suspended_at: clinic.suspended_at || null,
   created_by: clinic.created_by,
   created_by_name: clinic.created_by_name || null,
   created_at: clinic.created_at,
@@ -54,6 +61,10 @@ const getClinicDetailForUser = async (clinicId, user) => {
 
   const clinic = clinicResult.rows[0];
 
+  if (clinic.operational_status === "suspended" && user?.role !== "system_admin") {
+    return null;
+  }
+
   if (clinic.verification_status === "verified") {
     return clinic;
   }
@@ -84,7 +95,10 @@ const listPublicClinics = async (req, res) => {
     const limit = Math.min(50, Math.max(1, Number(req.query.limit || 12)));
     const offset = (page - 1) * limit;
 
-    const conditions = ["c.verification_status = 'verified'"];
+    const conditions = [
+      "c.verification_status = 'verified'",
+      "c.operational_status = 'active'",
+    ];
     const values = [];
 
     if (search) {
@@ -362,6 +376,7 @@ const listMyClinics = async (req, res) => {
       `SELECT DISTINCT c.*, u.full_name AS created_by_name
        FROM clinics c
        LEFT JOIN users u ON u.id = c.created_by
+       LEFT JOIN users reviewer ON reviewer.id = c.reviewed_by
        LEFT JOIN clinic_members cm ON cm.clinic_id = c.id AND cm.is_active = TRUE
        WHERE c.created_by = $1 OR cm.user_id = $1
        ORDER BY c.created_at DESC`,
@@ -386,9 +401,11 @@ const listMyClinics = async (req, res) => {
 const listClinicsForReview = async (req, res) => {
   try {
     const result = await pool.query(
-      `SELECT c.*, u.full_name AS created_by_name
+      `SELECT c.*, u.full_name AS created_by_name, reviewer.full_name AS reviewed_by_name
        FROM clinics c
        LEFT JOIN users u ON u.id = c.created_by
+       LEFT JOIN users reviewer ON reviewer.id = c.reviewed_by
+       WHERE c.verification_status = 'pending'
        ORDER BY c.created_at DESC`
     );
 
@@ -436,13 +453,27 @@ const reviewClinic = async (req, res) => {
 
     const result = await pool.query(
       `UPDATE clinics
-       SET verification_status = $1, updated_at = now()
-       WHERE id = $2
+       SET verification_status = $1,
+           rejection_reason = CASE WHEN $1 = 'rejected' THEN $2 ELSE NULL END,
+           reviewed_by = $3,
+           reviewed_at = now(),
+           updated_at = now()
+       WHERE id = $4 AND verification_status = 'pending'
        RETURNING *`,
-      [nextStatus, clinicId]
+      [nextStatus, nextStatus === "rejected" ? String(reason).trim() : null, req.user.id, clinicId]
     );
 
     if (result.rowCount === 0) {
+      const current = await pool.query(
+        "SELECT verification_status FROM clinics WHERE id = $1",
+        [clinicId]
+      );
+      if (current.rowCount) {
+        return res.status(409).json({
+          success: false,
+          message: "Only pending clinic applications can be reviewed.",
+        });
+      }
       return res.status(404).json({
         success: false,
         message: "Clinic not found.",

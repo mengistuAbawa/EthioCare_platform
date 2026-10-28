@@ -1,6 +1,6 @@
-import { Building2, LogOut, PlusCircle, ShieldCheck } from "lucide-react";
+import { Building2, PlusCircle, ShieldCheck } from "lucide-react";
 import { Link } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
 import api from "../../services/api";
 
@@ -15,38 +15,40 @@ const emptyForm = {
 };
 
 export default function ClinicAdminDashboard() {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const [clinics, setClinics] = useState([]);
   const [form, setForm] = useState(emptyForm);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState({ type: "", text: "" });
 
-  const fetchClinics = async () => {
-    try {
-      const response = await api.get("/clinics/my/clinics");
-      setClinics(response.data?.data?.clinics || []);
-    } catch (error) {
-      setMessage({
-        type: "error",
-        text: error.response?.data?.message || "Unable to load your clinics.",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+  const fetchClinics = useCallback(async () => {
+    const response = await api.get("/clinics/my/clinics");
+    return response.data?.data?.clinics || [];
+  }, []);
 
   useEffect(() => {
-    api.get("/clinics/my/clinics")
-      .then((response) => setClinics(response.data?.data?.clinics || []))
-      .catch((error) => {
-        setMessage({
-          type: "error",
-          text: error.response?.data?.message || "Unable to load your clinics.",
-        });
+    let active = true;
+    fetchClinics()
+      .then((nextClinics) => {
+        if (active) setClinics(nextClinics);
       })
-      .finally(() => setLoading(false));
-  }, []);
+      .catch((error) => {
+        if (active) {
+          setMessage({
+            type: "error",
+            text: error.response?.data?.message || "Unable to load your clinics.",
+          });
+        }
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [fetchClinics]);
 
   const handleChange = (event) => {
     const { name, value } = event.target;
@@ -56,17 +58,24 @@ export default function ClinicAdminDashboard() {
   const handleSubmit = async (event) => {
     event.preventDefault();
     setSubmitting(true);
-    setLoading(true);
     setMessage({ type: "", text: "" });
 
     try {
       await api.post("/clinics", form);
-      setMessage({
-        type: "success",
-        text: "Clinic registration submitted successfully and is pending verification.",
-      });
       setForm(emptyForm);
-      fetchClinics();
+      try {
+        const nextClinics = await fetchClinics();
+        setClinics(nextClinics);
+        setMessage({
+          type: "success",
+          text: "Clinic registration submitted successfully and is pending verification.",
+        });
+      } catch (error) {
+        setMessage({
+          type: "error",
+          text: error.response?.data?.message || "Clinic registered, but your clinic list could not be refreshed.",
+        });
+      }
     } catch (error) {
       setMessage({
         type: "error",
@@ -78,23 +87,7 @@ export default function ClinicAdminDashboard() {
   };
 
   return (
-    <main className="min-h-screen bg-slate-100 p-6">
-      <div className="mx-auto max-w-6xl">
-        <header className="mb-8 flex items-center justify-between rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <div>
-            <p className="text-sm uppercase tracking-[0.2em] text-slate-500">Clinic</p>
-            <h1 className="text-2xl font-bold text-slate-900">Clinic administration</h1>
-          </div>
-          <button
-            type="button"
-            onClick={logout}
-            className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white"
-          >
-            <LogOut size={16} />
-            Logout
-          </button>
-        </header>
-
+    <div className="space-y-8">
         <div className="mb-8 grid gap-6 md:grid-cols-3">
           <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
             <div className="mb-4 inline-flex rounded-xl bg-emerald-100 p-3 text-emerald-700">
@@ -125,7 +118,7 @@ export default function ClinicAdminDashboard() {
         </div>
 
         <div className="grid gap-8 lg:grid-cols-[1.2fr_0.8fr]">
-          <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+          <section id="your-clinics" className="scroll-mt-24 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
             <h2 className="text-xl font-bold text-slate-900">Your clinics</h2>
 
             {loading ? (
@@ -160,7 +153,7 @@ export default function ClinicAdminDashboard() {
             )}
           </section>
 
-          <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+          <section id="register-clinic" className="scroll-mt-24 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
             <h2 className="text-xl font-bold text-slate-900">Register clinic</h2>
             <p className="mt-1 text-sm text-slate-500">Submit a clinic profile for verification review.</p>
 
@@ -243,7 +236,6 @@ export default function ClinicAdminDashboard() {
             </form>
           </section>
         </div>
-      </div>
-    </main>
+    </div>
   );
 }

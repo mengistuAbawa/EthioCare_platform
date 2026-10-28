@@ -12,6 +12,22 @@ const getClinicMembership = async (userId, clinicId) => {
   return result.rows[0] || null;
 };
 
+const requireOperationalClinic = async (clinicId, res) => {
+  const result = await pool.query(
+    "SELECT operational_status FROM clinics WHERE id = $1",
+    [clinicId]
+  );
+  if (!result.rowCount) {
+    res.status(404).json({ success: false, message: "Clinic not found." });
+    return false;
+  }
+  if (result.rows[0].operational_status === "suspended") {
+    res.status(403).json({ success: false, message: "This clinic is suspended." });
+    return false;
+  }
+  return true;
+};
+
 const requireAuthenticatedUser = (req, res, next) => {
   if (!req.user || !req.user.id) {
     return res.status(401).json({
@@ -61,6 +77,7 @@ const requireClinicAdminAccess = async (req, res, next) => {
       });
     }
 
+    if (!(await requireOperationalClinic(clinicId, res))) return;
     req.clinicMembership = membership;
     return next();
   } catch (error) {
@@ -103,6 +120,7 @@ const requireClinicStaffAccess = async (req, res, next) => {
       });
     }
 
+    if (!(await requireOperationalClinic(clinicId, res))) return;
     req.clinicMembership = membership;
     return next();
   } catch (error) {
@@ -159,6 +177,7 @@ const requireClinicOwnerOrAdmin = async (req, res, next) => {
       });
     }
 
+    if (!(await requireOperationalClinic(clinicId, res))) return;
     req.clinic = clinic;
     return next();
   } catch (error) {

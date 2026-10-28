@@ -75,15 +75,14 @@ export default function MyDoctorProfile() {
   };
 
   if (loading) {
-    return <main className="flex min-h-screen items-center justify-center text-slate-600">Loading your profile...</main>;
+    return <p className="text-slate-600" role="status">Loading your profile...</p>;
   }
 
   return (
-    <main className="min-h-screen bg-slate-50 px-4 py-10 sm:px-6">
-      <div className="mx-auto max-w-3xl">
+    <div className="mx-auto max-w-3xl">
         <header className="mb-6">
           <p className="text-sm font-semibold uppercase tracking-wider text-teal-700">Doctor workspace</p>
-          <h1 className="mt-2 text-3xl font-bold text-slate-950">My professional profile</h1>
+          <h2 className="mt-2 text-3xl font-bold text-slate-950">My professional profile</h2>
         </header>
         {error ? <p className="mb-4 rounded-xl border border-rose-200 bg-rose-50 p-4 text-rose-800" role="alert">{error}</p> : null}
         {notice ? <p className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-emerald-800" role="status">{notice}</p> : null}
@@ -163,7 +162,6 @@ export default function MyDoctorProfile() {
             <button type="button" onClick={() => { setLoading(true); load(); }} className="ml-2 font-semibold underline">Retry</button>
           </section>
         )}
-      </div>
-    </main>
+    </div>
   );
 }

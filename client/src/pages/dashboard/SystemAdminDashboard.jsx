@@ -1,254 +1,185 @@
-import { LogOut, ShieldCheck, Users } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
-import { useAuth } from "../../context/AuthContext";
-import api from "../../services/api";
+import { useCallback, useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import { getAdminDashboard } from "../../services/systemAdminService";
+import EmptyState from "../../components/dashboard/EmptyState";
+import ErrorState from "../../components/dashboard/ErrorState";
+import LoadingState from "../../components/dashboard/LoadingState";
 
-export default function SystemAdminDashboard() {
-  const { user, logout } = useAuth();
-  const [clinics, setClinics] = useState([]);
-  const [doctorStats, setDoctorStats] = useState(null);
-  const [doctorAuditEvents, setDoctorAuditEvents] = useState([]);
+const cardClass = "rounded-2xl border border-slate-200 bg-white p-5";
+const displayDate = (value) => new Date(value).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+
+function TrendChart({ title, data = [] }) {
+  const maxValue = Math.max(1, ...data.map((item) => item.count));
+  const hasData = data.some((item) => item.count > 0);
+
+  return (
+    <section className={cardClass}>
+      <h3 className="font-semibold text-slate-900">{title}</h3>
+      {!hasData ? (
+        <p className="mt-4 text-sm text-slate-500">No records were created in the last 14 days.</p>
+      ) : (
+        <div className="mt-5 grid h-36 grid-cols-7 items-end gap-2 sm:grid-cols-14" aria-label={`${title} over the last 14 days`}>
+          {data.map((item) => (
+            <div key={item.day} className="flex h-full flex-col items-center justify-end gap-1" title={`${displayDate(item.day)}: ${item.count}`}>
+              <span className="text-[10px] font-medium text-slate-600">{item.count || ""}</span>
+              <div
+                className="w-full min-w-2 rounded-t bg-teal-600"
+                style={{ height: `${Math.max(4, (item.count / maxValue) * 100)}%` }}
+                aria-hidden="true"
+              />
+              <time className="text-[9px] text-slate-500" dateTime={item.day}>
+                {new Date(item.day).getDate()}
+              </time>
+            </div>
+          ))}
+        </div>
+      )}
+      <p className="mt-3 text-xs text-slate-500">Daily records created · last 14 days</p>
+    </section>
+  );
+}
+
+export function PlatformAnalyticsPage() {
+  const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [processingId, setProcessingId] = useState(null);
-  const [message, setMessage] = useState({ type: "", text: "" });
+  const [error, setError] = useState("");
+  const [attempt, setAttempt] = useState(0);
 
-  const fetchClinics = async () => {
+  const load = useCallback(async () => {
     try {
-      const response = await api.get("/clinics/admin/pending");
-      setClinics(response.data?.data?.clinics || []);
-    } catch (error) {
-      setMessage({
-        type: "error",
-        text: error.response?.data?.message || "Unable to load clinic verification queue.",
-      });
+      const response = await getAdminDashboard();
+      setData(response.data?.data || null);
+    } catch (requestError) {
+      setError(requestError.response?.data?.message || "Unable to load platform analytics.");
     } finally {
       setLoading(false);
     }
-  };
-
-  useEffect(() => {
-    api.get("/clinics/admin/pending")
-      .then((response) => {
-        setClinics(response.data?.data?.clinics || []);
-        setMessage({ type: "", text: "" });
-      })
-      .catch((error) => {
-        setMessage({
-          type: "error",
-          text: error.response?.data?.message || "Unable to load clinic verification queue.",
-        });
-      })
-      .finally(() => setLoading(false));
-    api.get("/doctors/admin/statistics")
-      .then((response) => setDoctorStats(response.data?.data || null))
-      .catch((error) => {
-        setMessage({
-          type: "error",
-          text: error.response?.data?.message || "Unable to load doctor statistics.",
-        });
-      });
-    api.get("/doctors/admin/audit?limit=8")
-      .then((response) => setDoctorAuditEvents(response.data?.data?.events || []))
-      .catch((error) => {
-        setMessage({
-          type: "error",
-          text: error.response?.data?.message || "Unable to load doctor audit history.",
-        });
-      });
   }, []);
+  useEffect(() => { void Promise.resolve().then(load); }, [load, attempt]);
 
-  const stats = useMemo(() => {
-    const summary = {
-      pending: 0,
-      verified: 0,
-      rejected: 0,
-    };
+  if (loading) return <LoadingState label="Loading platform analytics..." />;
+  if (error) return <ErrorState message={error} onRetry={() => { setLoading(true); setError(""); setAttempt((current) => current + 1); }} />;
+  if (!data) return <EmptyState title="Analytics unavailable" description="No analytics response was returned." />;
 
-    clinics.forEach((clinic) => {
-      if (clinic.verification_status === "pending") summary.pending += 1;
-      if (clinic.verification_status === "verified") summary.verified += 1;
-      if (clinic.verification_status === "rejected") summary.rejected += 1;
-    });
+  const statuses = data.appointments?.by_status || [];
+  const total = statuses.reduce((sum, item) => sum + item.count, 0);
+  return (
+    <div className="space-y-5">
+      <section className={cardClass}>
+        <h2 className="text-xl font-bold text-slate-950">Platform analytics</h2>
+        <p className="mt-1 text-sm text-slate-600">Summary and 14-day trends calculated from stored clinic, user, and appointment records.</p>
+      </section>
+      <div className="grid gap-4 xl:grid-cols-2">
+        <TrendChart title="Clinic registrations" data={data.trends?.clinic_registrations} />
+        <TrendChart title="Appointments created" data={data.trends?.appointments_created} />
+      </div>
+      <section className={cardClass}>
+        <h3 className="font-semibold text-slate-900">Appointment status distribution</h3>
+        {total === 0 ? <p className="mt-3 text-sm text-slate-500">No appointment records exist yet.</p> : (
+          <div className="mt-4 space-y-3">
+            {statuses.map((status) => (
+              <div key={status.status}>
+                <div className="mb-1 flex justify-between text-sm"><span className="capitalize text-slate-700">{status.status.replaceAll("_", " ")}</span><span className="font-semibold text-slate-900">{status.count} ({Math.round(status.count / total * 100)}%)</span></div>
+                <div className="h-2 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full bg-teal-600" style={{ width: `${status.count / total * 100}%` }} /></div>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+      <p className="text-xs text-slate-500">Counts reflect current database records; no forecast or synthetic values are used.</p>
+    </div>
+  );
+}
 
-    return summary;
-  }, [clinics]);
+export default function SystemAdminDashboard() {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [attempt, setAttempt] = useState(0);
 
-  const handleReview = async (clinicId, decision, reason = "") => {
-    setProcessingId(clinicId);
-    setMessage({ type: "", text: "" });
-
+  const load = useCallback(async () => {
     try {
-      await api.post(`/clinics/${clinicId}/review`, { decision, reason });
-      setMessage({
-        type: "success",
-        text: `Clinic ${decision} successfully.`,
-      });
-      fetchClinics();
-    } catch (error) {
-      setMessage({
-        type: "error",
-        text: error.response?.data?.message || "Unable to update clinic review status.",
-      });
+      const response = await getAdminDashboard();
+      setData(response.data?.data || null);
+    } catch (requestError) {
+      setError(requestError.response?.data?.message || "Unable to load system administration metrics.");
     } finally {
-      setProcessingId(null);
+      setLoading(false);
     }
-  };
+  }, []);
+  useEffect(() => { void Promise.resolve().then(load); }, [load, attempt]);
+
+  if (loading) return <LoadingState label="Loading system dashboard..." />;
+  if (error) return <ErrorState message={error} onRetry={() => { setLoading(true); setError(""); setAttempt((current) => current + 1); }} />;
+  if (!data) return <EmptyState title="Dashboard data unavailable" description="No dashboard summary was returned." />;
+
+  const clinicMetrics = data.clinics || {};
+  const userMetrics = data.users || {};
+  const metrics = [
+    ["Registered clinics", clinicMetrics.total || 0, "/admin/clinics"],
+    ["Pending verification", clinicMetrics.pending || 0, "/admin/verification"],
+    ["Verified clinics", clinicMetrics.verified || 0, "/admin/clinics"],
+    ["Suspended clinics", clinicMetrics.suspended || 0, "/admin/clinic-status"],
+    ["Active users", userMetrics.total || 0, "/admin/users"],
+    ["Doctors", userMetrics.doctors || 0, "/admin/doctors"],
+    ["Receptionists", userMetrics.receptionists || 0, "/admin/staff"],
+    ["Appointments", data.appointments?.total || 0, "/admin/appointments"],
+  ];
 
   return (
-    <main className="min-h-screen bg-slate-100 p-6">
-      <div className="mx-auto max-w-6xl">
-        <header className="mb-8 flex items-center justify-between rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <div>
-            <p className="text-sm uppercase tracking-[0.2em] text-slate-500">System</p>
-            <h1 className="text-2xl font-bold text-slate-900">Admin dashboard</h1>
-          </div>
-          <button
-            type="button"
-            onClick={logout}
-            className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white"
-          >
-            <LogOut size={16} />
-            Logout
-          </button>
-        </header>
+    <div className="space-y-6">
+      <section className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
+        <h2 className="text-xl font-bold text-slate-950">System overview</h2>
+        <p className="mt-1 text-sm text-slate-600">Live counts from the clinic, user, appointment, and audit records.</p>
+      </section>
 
-        {message.text ? (
-          <div
-            className={`mb-6 rounded-xl border px-4 py-3 text-sm ${
-              message.type === "success"
-                ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-                : "border-rose-200 bg-rose-50 text-rose-700"
-            }`}
-          >
-            {message.text}
-          </div>
-        ) : null}
+      <section aria-label="Platform metrics" className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        {metrics.map(([label, value, to]) => (
+          <Link key={label} to={to} className={`${cardClass} transition-colors hover:border-teal-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700`}>
+            <p className="text-sm text-slate-600">{label}</p>
+            <p className="mt-2 text-3xl font-bold text-slate-950">{Number(value).toLocaleString()}</p>
+          </Link>
+        ))}
+      </section>
 
-        <div className="mb-8 grid gap-6 md:grid-cols-4">
-          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-            <div className="mb-4 inline-flex rounded-xl bg-teal-100 p-3 text-teal-700">
-              <ShieldCheck size={22} />
-            </div>
+      <div className="grid gap-4 xl:grid-cols-2">
+        <TrendChart title="New clinic registrations" data={data.trends?.clinic_registrations} />
+        <TrendChart title="Appointments created" data={data.trends?.appointments_created} />
+      </div>
 
-            <section className="mb-8 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-              <h2 className="text-xl font-bold text-slate-900">Doctor platform statistics</h2>
-              {doctorStats ? (
-                <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                  {[
-                    ["Profiles", doctorStats.totals.total],
-                    ["Active", doctorStats.totals.active],
-                    ["Available", doctorStats.totals.available],
-                    ["Awaiting profile review", doctorStats.totals.awaiting_profile_review],
-                  ].map(([label, value]) => (
-                    <div key={label} className="rounded-xl bg-slate-50 p-4">
-                      <p className="text-sm text-slate-600">{label}</p>
-                      <p className="mt-1 text-2xl font-bold text-slate-900">{value}</p>
-                    </div>
-                  ))}
-                </div>
-              ) : <p className="mt-3 text-sm text-slate-500">Doctor statistics are unavailable.</p>}
-            </section>
-
-            <section className="mb-8 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-              <h2 className="text-xl font-bold text-slate-900">Recent doctor-management audit events</h2>
-              {doctorAuditEvents.length ? (
-                <ul className="mt-4 divide-y divide-slate-100">
-                  {doctorAuditEvents.map((event) => (
-                    <li key={event.id} className="flex flex-col justify-between gap-1 py-3 sm:flex-row sm:items-center">
-                      <span>
-                        <span className="font-semibold text-slate-900">{event.action.replaceAll("_", " ")}</span>
-                        <span className="ml-2 text-sm text-slate-600">
-                          by {event.actor_name || "Deleted account"} ({event.actor_role || "unknown role"})
-                        </span>
-                      </span>
-                      <time className="text-sm text-slate-500" dateTime={event.created_at}>
-                        {new Date(event.created_at).toLocaleString()}
-                      </time>
-                    </li>
-                  ))}
-                </ul>
-              ) : <p className="mt-3 text-sm text-slate-500">No doctor-management events recorded.</p>}
-            </section>
-            <p className="text-sm text-slate-500">Signed in as</p>
-            <h2 className="mt-2 text-xl font-semibold text-slate-900">{user?.full_name || "System Admin"}</h2>
-            <p className="mt-1 text-sm text-slate-500">{user?.role}</p>
-          </div>
-
-          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-            <div className="mb-4 inline-flex rounded-xl bg-sky-100 p-3 text-sky-700">
-              <Users size={22} />
-            </div>
-            <p className="text-sm text-slate-500">Pending clinics</p>
-            <h2 className="mt-2 text-3xl font-bold text-slate-900">{stats.pending}</h2>
-          </div>
-
-          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-            <div className="mb-4 inline-flex rounded-xl bg-emerald-100 p-3 text-emerald-700">
-              <ShieldCheck size={22} />
-            </div>
-            <p className="text-sm text-slate-500">Verified</p>
-            <h2 className="mt-2 text-3xl font-bold text-slate-900">{stats.verified}</h2>
-          </div>
-
-          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-            <div className="mb-4 inline-flex rounded-xl bg-rose-100 p-3 text-rose-700">
-              <ShieldCheck size={22} />
-            </div>
-            <p className="text-sm text-slate-500">Rejected</p>
-            <h2 className="mt-2 text-3xl font-bold text-slate-900">{stats.rejected}</h2>
-          </div>
+      <section className={cardClass}>
+        <div className="flex items-center justify-between gap-3">
+          <h3 className="font-semibold text-slate-900">Appointment status distribution</h3>
+          <Link to="/admin/appointments" className="text-sm font-semibold text-teal-800 hover:underline">View appointments</Link>
         </div>
+        {data.appointments?.by_status?.length ? (
+          <div className="mt-4 flex flex-wrap gap-2">
+            {data.appointments.by_status.map((item) => <span key={item.status} className="rounded-xl bg-slate-50 px-3 py-2 text-sm capitalize text-slate-700">{item.status.replaceAll("_", " ")} <strong className="ml-1 text-slate-950">{item.count}</strong></span>)}
+          </div>
+        ) : <p className="mt-3 text-sm text-slate-500">No appointments have been recorded.</p>}
+      </section>
 
-        <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-          <h2 className="text-xl font-bold text-slate-900">Clinic verification queue</h2>
-
-          {loading ? (
-            <p className="mt-4 text-sm text-slate-500">Loading clinic review queue...</p>
-          ) : clinics.length === 0 ? (
-            <div className="mt-4 rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-6 text-sm text-slate-500">
-              There are no clinics waiting for review.
-            </div>
-          ) : (
-            <div className="mt-5 space-y-4">
-              {clinics.map((clinic) => (
-                <div key={clinic.id} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                  <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-                    <div>
-                      <h3 className="text-lg font-bold text-slate-900">{clinic.name}</h3>
-                      <p className="mt-1 text-sm text-slate-500">
-                        {clinic.city}{clinic.region ? `, ${clinic.region}` : ""}
-                      </p>
-                      <p className="mt-2 text-sm text-slate-600">{clinic.address}</p>
-                      <p className="mt-2 text-xs uppercase tracking-[0.15em] text-slate-500">
-                        Status: {clinic.verification_status}
-                      </p>
-                    </div>
-
-                    <div className="flex flex-col gap-2 sm:flex-row">
-                      <button
-                        type="button"
-                        disabled={processingId === clinic.id}
-                        onClick={() => handleReview(clinic.id, "verified")}
-                        className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-emerald-400"
-                      >
-                        {processingId === clinic.id ? "Processing..." : "Approve"}
-                      </button>
-                      <button
-                        type="button"
-                        disabled={processingId === clinic.id}
-                        onClick={() => handleReview(clinic.id, "rejected", "Incomplete or invalid clinic profile.")}
-                        className="rounded-xl bg-rose-600 px-4 py-2 text-sm font-semibold text-white hover:bg-rose-700 disabled:cursor-not-allowed disabled:bg-rose-400"
-                      >
-                        Reject
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+      <div className="grid gap-4 xl:grid-cols-2">
+        <section className={cardClass}>
+          <div className="flex items-center justify-between gap-3"><h3 className="font-semibold text-slate-900">Recent clinic registrations</h3><Link to="/admin/clinics" className="text-sm font-semibold text-teal-800 hover:underline">All clinics</Link></div>
+          {data.recent_clinics?.length ? (
+            <ul className="mt-3 divide-y divide-slate-100">{data.recent_clinics.map((clinic) => (
+              <li key={clinic.id} className="flex flex-col justify-between gap-2 py-3 sm:flex-row sm:items-center">
+                <div><Link to={`/admin/clinics/${clinic.id}`} className="font-semibold text-slate-900 hover:text-teal-800">{clinic.name}</Link><p className="text-xs text-slate-500">{clinic.city}{clinic.region ? `, ${clinic.region}` : ""} · {clinic.created_by_name || "Owner unavailable"}</p></div>
+                <div className="flex gap-2"><span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs capitalize text-slate-700">{clinic.verification_status}</span><span className={`rounded-full px-2.5 py-1 text-xs capitalize ${clinic.operational_status === "suspended" ? "bg-rose-50 text-rose-800" : "bg-emerald-50 text-emerald-800"}`}>{clinic.operational_status}</span></div>
+              </li>
+            ))}</ul>
+          ) : <p className="mt-3 text-sm text-slate-500">No clinic records yet.</p>}
+        </section>
+        <section className={cardClass}>
+          <div className="flex items-center justify-between gap-3"><h3 className="font-semibold text-slate-900">Recent administrative activity</h3><Link to="/admin/audit-logs" className="text-sm font-semibold text-teal-800 hover:underline">Audit logs</Link></div>
+          {data.recent_activity?.length ? (
+            <ul className="mt-3 divide-y divide-slate-100">{data.recent_activity.map((event) => (
+              <li key={event.id} className="py-3"><p className="font-semibold capitalize text-slate-900">{event.action.replaceAll("_", " ")}</p><p className="text-xs text-slate-600">{event.actor_name || "Deleted account"} · {event.entity}{event.entity_id ? ` #${event.entity_id}` : ""}</p><time className="text-xs text-slate-500" dateTime={event.created_at}>{new Date(event.created_at).toLocaleString()}</time></li>
+            ))}</ul>
+          ) : <p className="mt-3 text-sm text-slate-500">No administrative activity recorded.</p>}
         </section>
       </div>
-    </main>
+    </div>
   );
 }

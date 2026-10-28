@@ -3,12 +3,14 @@ import { ArrowLeft, MapPin, Stethoscope } from "lucide-react";
 import { Link, useParams } from "react-router-dom";
 import { getPublicDoctor } from "../../services/doctorService";
 
-export default function DoctorDetails() {
+export default function DoctorDetails({ portal = false }) {
   const { id } = useParams();
   const [doctor, setDoctor] = useState(null);
   const [loadedId, setLoadedId] = useState(null);
   const loading = loadedId !== id;
   const [error, setError] = useState("");
+  const Wrapper = portal ? "div" : "main";
+  const directoryPath = portal ? "/patient/doctors" : "/doctors";
 
   useEffect(() => {
     let active = true;
@@ -33,24 +35,24 @@ export default function DoctorDetails() {
   }, [id]);
 
   if (loading) {
-    return <main className="flex min-h-screen items-center justify-center text-slate-600">Loading doctor profile...</main>;
+    return <Wrapper className="flex min-h-48 items-center justify-center text-slate-600">Loading doctor profile...</Wrapper>;
   }
 
   if (error || !doctor) {
     return (
-      <main className="min-h-screen bg-slate-50 p-6">
+      <Wrapper className={portal ? "p-6" : "min-h-screen bg-slate-50 p-6"}>
         <div className="mx-auto max-w-3xl rounded-2xl border border-rose-200 bg-rose-50 p-6 text-rose-800" role="alert">
           {error || "Doctor profile not found."}
-          <Link to="/doctors" className="mt-4 block font-semibold underline">Back to doctor directory</Link>
+          <Link to={directoryPath} className="mt-4 block font-semibold underline">Back to doctor directory</Link>
         </div>
-      </main>
+      </Wrapper>
     );
   }
 
   return (
-    <main className="min-h-screen bg-slate-50 px-4 py-10 sm:px-6">
+    <Wrapper className={portal ? "px-1 py-2" : "min-h-screen bg-slate-50 px-4 py-10 sm:px-6"}>
       <article className="mx-auto max-w-4xl">
-        <Link to="/doctors" className="mb-6 inline-flex items-center gap-2 font-semibold text-teal-800">
+        <Link to={directoryPath} className="mb-6 inline-flex items-center gap-2 font-semibold text-teal-800">
           <ArrowLeft size={17} /> Doctor directory
         </Link>
         <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-9">
@@ -97,6 +99,6 @@ export default function DoctorDetails() {
           </p>
         </div>
       </article>
-    </main>
+    </Wrapper>
   );
 }

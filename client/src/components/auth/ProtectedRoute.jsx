@@ -1,5 +1,6 @@
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import LoadingState from "../dashboard/LoadingState";
 
 export default function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
@@ -7,8 +8,8 @@ export default function ProtectedRoute({ children }) {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-100 text-slate-700">
-        Checking your session...
+      <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
+        <LoadingState label="Checking your session..." />
       </div>
     );
   }

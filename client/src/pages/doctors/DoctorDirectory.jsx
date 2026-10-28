@@ -5,7 +5,7 @@ import { getPublicDoctors } from "../../services/doctorService";
 
 const initialFilters = { search: "", specialty: "", clinic: "", city: "" };
 
-export default function DoctorDirectory() {
+export default function DoctorDirectory({ portal = false }) {
   const [filters, setFilters] = useState(initialFilters);
   const [query, setQuery] = useState(initialFilters);
   const [page, setPage] = useState(1);
@@ -51,11 +51,13 @@ export default function DoctorDirectory() {
     ));
   };
 
+  const Wrapper = portal ? "div" : "main";
+
   return (
-    <main className="min-h-screen bg-slate-50 px-4 py-10 sm:px-6">
+    <Wrapper className={portal ? "space-y-6" : "min-h-screen bg-slate-50 px-4 py-10 sm:px-6"}>
       <div className="mx-auto max-w-7xl">
         <header className="mb-8">
-          <p className="text-sm font-semibold uppercase tracking-[0.18em] text-teal-700">EthioCare directory</p>
+          <p className="text-sm font-semibold uppercase tracking-[0.18em] text-teal-700">{portal ? "Patient Portal" : "EthioCare directory"}</p>
           <h1 className="mt-2 text-3xl font-bold text-slate-950 sm:text-4xl">Find a doctor</h1>
           <p className="mt-3 max-w-2xl text-slate-600">
             Explore approved doctor profiles at verified clinics.
@@ -165,7 +167,7 @@ export default function DoctorDirectory() {
                       </span>
                     </span>
                     <Link
-                      to={`/doctors/${doctor.id}`}
+                      to={portal ? `/patient/doctors/${doctor.id}` : `/doctors/${doctor.id}`}
                       className="inline-flex items-center gap-1 font-semibold text-teal-700 hover:text-teal-900"
                     >
                       View profile <ArrowRight size={16} />
@@ -204,6 +206,6 @@ export default function DoctorDirectory() {
           </div>
         )}
       </div>
-    </main>
+    </Wrapper>
   );
 }

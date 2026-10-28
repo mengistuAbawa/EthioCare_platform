@@ -7,6 +7,10 @@ const authRoutes = require("./routes/authRoutes");
 const clinicRoutes = require("./routes/clinicRoutes");
 const doctorRoutes = require("./routes/doctorRoutes");
 const clinicDoctorRoutes = require("./routes/clinicDoctorRoutes");
+const assessmentRoutes = require("./routes/assessmentRoutes");
+const notificationRoutes = require("./routes/notificationRoutes");
+const patientAppointmentRoutes = require("./routes/patientAppointmentRoutes");
+const adminRoutes = require("./routes/adminRoutes");
 const errorHandler = require("./middleware/errorHandler");
 
 const app = express();
@@ -58,6 +62,10 @@ app.use("/api/auth", authRoutes);
 app.use("/api/clinics", clinicRoutes);
 app.use("/api/doctors", doctorRoutes);
 app.use("/api/clinics", clinicDoctorRoutes);
+app.use("/api/assessments", assessmentRoutes);
+app.use("/api/notifications", notificationRoutes);
+app.use("/api/appointments", patientAppointmentRoutes);
+app.use("/api/admin", adminRoutes);
 
 app.use((req, res) => {
   res.status(404).json({

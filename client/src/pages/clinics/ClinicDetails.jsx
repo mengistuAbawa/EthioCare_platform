@@ -3,7 +3,7 @@ import { ArrowLeft, Building2, MapPin, ShieldCheck } from "lucide-react";
 import { Link, useParams } from "react-router-dom";
 import api from "../../services/api";
 
-export default function ClinicDetails() {
+export default function ClinicDetails({ portal = false }) {
   const { id } = useParams();
   const [clinic, setClinic] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -27,32 +27,35 @@ export default function ClinicDetails() {
     fetchClinic();
   }, [id]);
 
+  const Wrapper = portal ? "div" : "main";
+  const directoryPath = portal ? "/patient/clinics" : "/clinics";
+
   if (loading) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-slate-100 text-slate-600">
+      <Wrapper className={portal ? "p-6 text-slate-600" : "flex min-h-screen items-center justify-center bg-slate-100 text-slate-600"}>
         Loading clinic details...
-      </main>
+      </Wrapper>
     );
   }
 
   if (error || !clinic) {
     return (
-      <main className="min-h-screen bg-slate-100 p-6">
+      <Wrapper className={portal ? "p-6" : "min-h-screen bg-slate-100 p-6"}>
         <div className="mx-auto max-w-3xl rounded-2xl border border-rose-200 bg-rose-50 p-6 text-rose-700 shadow-sm">
           <p className="font-semibold">Clinic not found</p>
           <p className="mt-2">{error || "This clinic is not available for public viewing."}</p>
-          <Link to="/clinics" className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-rose-700">
+          <Link to={directoryPath} className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-rose-700">
             <ArrowLeft size={16} /> Back to clinics
           </Link>
         </div>
-      </main>
+      </Wrapper>
     );
   }
 
   return (
-    <main className="min-h-screen bg-slate-100 px-4 py-12">
+    <Wrapper className={portal ? "px-1 py-2" : "min-h-screen bg-slate-100 px-4 py-12"}>
       <div className="mx-auto max-w-5xl">
-        <Link to="/clinics" className="mb-6 inline-flex items-center gap-2 text-sm font-semibold text-slate-700">
+        <Link to={directoryPath} className="mb-6 inline-flex items-center gap-2 text-sm font-semibold text-slate-700">
           <ArrowLeft size={16} /> Back to clinics
         </Link>
 
@@ -113,6 +116,6 @@ export default function ClinicDetails() {
           </div>
         </div>
       </div>
-    </main>
+    </Wrapper>
   );
 }
