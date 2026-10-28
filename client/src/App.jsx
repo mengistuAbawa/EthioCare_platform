@@ -1,93 +1,110 @@
-import { CalendarDays, HeartPulse, ShieldCheck, Stethoscope } from "lucide-react";
-
-const features = [
-  {
-    icon: Stethoscope,
-    title: "Find healthcare providers",
-    description: "Explore clinic services and doctor profiles in one place.",
-  },
-  {
-    icon: CalendarDays,
-    title: "Book appointments",
-    description: "Find available appointment times and manage your bookings.",
-  },
-  {
-    icon: ShieldCheck,
-    title: "Manage appointments securely",
-    description: "Keep your appointment information organized and accessible.",
-  },
-];
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { AuthProvider } from "./context/AuthContext";
+import ProtectedRoute from "./components/auth/ProtectedRoute";
+import RoleRoute from "./components/auth/RoleRoute";
+import Login from "./pages/auth/Login";
+import Register from "./pages/auth/Register";
+import SystemAdminDashboard from "./pages/dashboard/SystemAdminDashboard";
+import ClinicAdminDashboard from "./pages/dashboard/ClinicAdminDashboard";
+import DoctorDashboard from "./pages/dashboard/DoctorDashboard";
+import ReceptionDashboard from "./pages/dashboard/ReceptionDashboard";
+import PatientDashboard from "./pages/dashboard/PatientDashboard";
+import ClinicDirectory from "./pages/clinics/ClinicDirectory";
+import ClinicDetails from "./pages/clinics/ClinicDetails";
+import DoctorDirectory from "./pages/doctors/DoctorDirectory";
+import DoctorDetails from "./pages/doctors/DoctorDetails";
+import DoctorManagement from "./pages/clinic/DoctorManagement";
+import MyDoctorProfile from "./pages/doctor/MyDoctorProfile";
 
 export default function App() {
   return (
-    <main className="min-h-screen bg-slate-50 text-slate-900">
-      <header className="border-b border-slate-200 bg-white">
-        <nav className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5">
-          <a href="/" className="flex items-center gap-2 font-bold text-teal-700">
-            <HeartPulse size={28} />
-            <span className="text-xl">EthioCare</span>
-          </a>
+    <BrowserRouter>
+      <AuthProvider>
+        <Routes>
+          <Route path="/" element={<Navigate to="/login" replace />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/clinics" element={<ClinicDirectory />} />
+          <Route path="/clinic/:id" element={<ClinicDetails />} />
+          <Route path="/doctors" element={<DoctorDirectory />} />
+          <Route path="/doctors/:id" element={<DoctorDetails />} />
+          <Route
+            path="/clinic/:clinicId/doctors"
+            element={
+              <ProtectedRoute>
+                <RoleRoute allowedRoles={["system_admin", "clinic_admin", "receptionist"]}>
+                  <DoctorManagement />
+                </RoleRoute>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/doctor/profile"
+            element={
+              <ProtectedRoute>
+                <RoleRoute allowedRoles={["doctor"]}>
+                  <MyDoctorProfile />
+                </RoleRoute>
+              </ProtectedRoute>
+            }
+          />
 
-          <span className="hidden text-sm text-slate-500 sm:block">
-            Healthcare appointments made simpler
-          </span>
-        </nav>
-      </header>
+          <Route
+            path="/admin/dashboard"
+            element={
+              <ProtectedRoute>
+                <RoleRoute allowedRoles={["system_admin"]}>
+                  <SystemAdminDashboard />
+                </RoleRoute>
+              </ProtectedRoute>
+            }
+          />
 
-      <section className="mx-auto max-w-7xl px-6 py-20 sm:py-28">
-        <div className="max-w-3xl">
-          <span className="inline-flex rounded-full bg-teal-50 px-4 py-2 text-sm font-semibold text-teal-700">
-            Your healthcare, organized
-          </span>
+          <Route
+            path="/clinic/dashboard"
+            element={
+              <ProtectedRoute>
+                <RoleRoute allowedRoles={["clinic_admin"]}>
+                  <ClinicAdminDashboard />
+                </RoleRoute>
+              </ProtectedRoute>
+            }
+          />
 
-          <h1 className="mt-6 text-4xl font-bold tracking-tight sm:text-6xl">
-            Better access to care.
-            <span className="block text-teal-700">Simpler appointments.</span>
-          </h1>
+          <Route
+            path="/doctor/dashboard"
+            element={
+              <ProtectedRoute>
+                <RoleRoute allowedRoles={["doctor"]}>
+                  <DoctorDashboard />
+                </RoleRoute>
+              </ProtectedRoute>
+            }
+          />
 
-          <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-600">
-            Discover clinics, explore healthcare services, and manage
-            appointments through one convenient platform.
-          </p>
+          <Route
+            path="/reception/dashboard"
+            element={
+              <ProtectedRoute>
+                <RoleRoute allowedRoles={["receptionist"]}>
+                  <ReceptionDashboard />
+                </RoleRoute>
+              </ProtectedRoute>
+            }
+          />
 
-          <div className="mt-9 flex flex-wrap gap-4">
-            <a
-              href="#features"
-              className="rounded-xl bg-teal-700 px-6 py-3 font-semibold text-white transition hover:bg-teal-800"
-            >
-              Explore features
-            </a>
-
-            <span className="rounded-xl border border-slate-300 px-6 py-3 font-semibold text-slate-700">
-              Coming soon: Online booking
-            </span>
-          </div>
-        </div>
-
-        <div
-          id="features"
-          className="mt-16 grid gap-6 md:grid-cols-3"
-        >
-          {features.map(({ icon: Icon, title, description }) => (
-            <article
-              key={title}
-              className="rounded-2xl border border-slate-200 bg-white p-7 shadow-sm transition hover:-translate-y-1 hover:shadow-md"
-            >
-              <div className="mb-5 inline-flex rounded-xl bg-teal-50 p-3 text-teal-700">
-                <Icon size={26} />
-              </div>
-
-              <h2 className="text-xl font-semibold">{title}</h2>
-
-              <p className="mt-3 leading-7 text-slate-600">{description}</p>
-            </article>
-          ))}
-        </div>
-      </section>
-
-      <footer className="border-t border-slate-200 bg-white px-6 py-6 text-center text-sm text-slate-500">
-        © {new Date().getFullYear()} EthioCare. Clinic Appointment Platform.
-      </footer>
-    </main>
+          <Route
+            path="/patient/dashboard"
+            element={
+              <ProtectedRoute>
+                <RoleRoute allowedRoles={["patient"]}>
+                  <PatientDashboard />
+                </RoleRoute>
+              </ProtectedRoute>
+            }
+          />
+        </Routes>
+      </AuthProvider>
+    </BrowserRouter>
   );
 }

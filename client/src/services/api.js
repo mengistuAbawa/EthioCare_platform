@@ -5,7 +5,19 @@ const api = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
-  timeout: 15000,
+  timeout: 150000,
 });
+
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem("ethiocare_token");
+      delete api.defaults.headers.common.Authorization;
+    }
+
+    return Promise.reject(error);
+  }
+);
 
 export default api;

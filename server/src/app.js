@@ -3,6 +3,11 @@ const cors = require("cors");
 const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
 const morgan = require("morgan");
+const authRoutes = require("./routes/authRoutes");
+const clinicRoutes = require("./routes/clinicRoutes");
+const doctorRoutes = require("./routes/doctorRoutes");
+const clinicDoctorRoutes = require("./routes/clinicDoctorRoutes");
+const errorHandler = require("./middleware/errorHandler");
 
 const app = express();
 
@@ -49,6 +54,11 @@ app.get("/api/health", (req, res) => {
   });
 });
 
+app.use("/api/auth", authRoutes);
+app.use("/api/clinics", clinicRoutes);
+app.use("/api/doctors", doctorRoutes);
+app.use("/api/clinics", clinicDoctorRoutes);
+
 app.use((req, res) => {
   res.status(404).json({
     success: false,
@@ -56,20 +66,6 @@ app.use((req, res) => {
   });
 });
 
-app.use((err, req, res, next) => {
-  console.error(err);
-
-  if (res.headersSent) {
-    return next(err);
-  }
-
-  res.status(err.status || 500).json({
-    success: false,
-    message:
-      process.env.NODE_ENV === "production"
-        ? "An unexpected server error occurred."
-        : err.message || "Internal server error",
-  });
-});
+app.use(errorHandler);
 
 module.exports = app;

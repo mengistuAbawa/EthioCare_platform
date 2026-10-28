@@ -1,6 +1,8 @@
 # EthioCare
 
-EthioCare is a clinic appointment and health services management platform.
+EthioCare is a full-stack clinic appointment platform built with React, Node.js, Express.js, and PostgreSQL.
+It is intended to support clinic discovery, service exploration, and appointment booking, with management tools
+for clinic operations.
 
 ## Technology Stack
 
