@@ -1,14 +1,22 @@
 import { useState } from "react";
 import { Eye, EyeOff, HeartPulse, LockKeyhole, Mail } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { useAuth } from "../../context/AuthContext";
+import { useAuth } from "../../context/useAuth";
 
 const roleRoutes = {
   system_admin: "/admin/dashboard",
   clinic_admin: "/clinic/dashboard",
   doctor: "/doctor/dashboard",
-  receptionist: "/reception/dashboard",
+  receptionist: "/receptionist/dashboard",
   patient: "/patient/dashboard",
+};
+
+const rolePathPrefixes = {
+  system_admin: ["/admin/"],
+  clinic_admin: ["/clinic/"],
+  doctor: ["/doctor/"],
+  receptionist: ["/receptionist/", "/reception/"],
+  patient: ["/patient/"],
 };
 
 export default function Login() {
@@ -43,9 +51,14 @@ export default function Login() {
 
     try {
       const response = await login(form.email, form.password);
-      const nextRoute = roleRoutes[response.data.user.role] || "/patient/dashboard";
-      const from = location.state?.from || nextRoute;
-      navigate(from, { replace: true });
+      const role = response.data.user.role;
+      const nextRoute = roleRoutes[role] || "/patient/dashboard";
+      const requestedPath = location.state?.from;
+      const canReturnToRequestedPath = typeof requestedPath === "string"
+        && requestedPath.startsWith("/")
+        && (requestedPath === "/account/profile"
+          || rolePathPrefixes[role]?.some((prefix) => requestedPath.startsWith(prefix)));
+      navigate(canReturnToRequestedPath ? requestedPath : nextRoute, { replace: true });
     } catch (error) {
       setErrors({
         general:

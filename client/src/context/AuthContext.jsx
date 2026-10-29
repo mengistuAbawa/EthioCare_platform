@@ -1,8 +1,7 @@
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../services/api";
-
-const AuthContext = createContext(null);
+import { AuthContext } from "./AuthContextValue";
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
@@ -24,7 +23,7 @@ export function AuthProvider({ children }) {
         api.defaults.headers.common.Authorization = `Bearer ${savedToken}`;
         const response = await api.get("/auth/me");
         setUser(response.data?.data?.user || null);
-      } catch (error) {
+      } catch {
         localStorage.removeItem("ethiocare_token");
         delete api.defaults.headers.common.Authorization;
         setUser(null);
@@ -46,7 +45,7 @@ export function AuthProvider({ children }) {
     }
   }, [token]);
 
-  const login = async (email, password) => {
+  const login = useCallback(async (email, password) => {
     const response = await api.post("/auth/login", { email, password });
     const nextToken = response.data?.data?.token;
     const nextUser = response.data?.data?.user;
@@ -58,14 +57,14 @@ export function AuthProvider({ children }) {
     setToken(nextToken);
     setUser(nextUser || null);
     return response.data;
-  };
+  }, []);
 
-  const register = async (payload) => {
+  const register = useCallback(async (payload) => {
     const response = await api.post("/auth/register", payload);
     return response.data;
-  };
+  }, []);
 
-  const logout = async () => {
+  const logout = useCallback(async () => {
     try {
       if (token) {
         await api.post("/auth/logout");
@@ -77,9 +76,9 @@ export function AuthProvider({ children }) {
       setUser(null);
       navigate("/login", { replace: true });
     }
-  };
+  }, [navigate, token]);
 
-  const refreshUser = async () => {
+  const refreshUser = useCallback(async () => {
     if (!token) {
       setUser(null);
       return;
@@ -93,7 +92,7 @@ export function AuthProvider({ children }) {
       setUser(null);
       throw error;
     }
-  };
+  }, [token]);
 
   const value = useMemo(
     () => ({
@@ -106,18 +105,8 @@ export function AuthProvider({ children }) {
       refreshUser,
       isAuthenticated: Boolean(user && token),
     }),
-    [user, token, loading]
+    [user, token, loading, login, register, logout, refreshUser]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-}
-
-export function useAuth() {
-  const context = useContext(AuthContext);
-
-  if (!context) {
-    throw new Error("useAuth must be used within an AuthProvider.");
-  }
-
-  return context;
 }

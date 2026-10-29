@@ -1,7 +1,7 @@
 const extractTextFromAssessmentFile = async () => ({
-  status: "disabled",
+  status: "not_configured",
   text: null,
-  message: "OCR is disabled. Assessment files are not sent to an OCR provider.",
+  message: "No validated OCR provider is configured. Assessment files are not sent to an OCR provider.",
 });
 
 module.exports = { extractTextFromAssessmentFile };

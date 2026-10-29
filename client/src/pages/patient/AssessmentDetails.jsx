@@ -5,6 +5,7 @@ import OcrVerificationPanel from "../../components/assessment/OcrVerificationPan
 import {
   getAssessment,
   getAssessmentFileDownloadUrl,
+  getPatientTreatmentPlan,
 } from "../../services/assessmentService";
 
 const displayText = (value) => value || "Not provided";
@@ -12,14 +13,18 @@ const displayText = (value) => value || "Not provided";
 export default function AssessmentDetails() {
   const { assessmentId } = useParams();
   const [assessment, setAssessment] = useState(null);
+  const [treatmentPlan, setTreatmentPlan] = useState(null);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
 
   useEffect(() => {
     let active = true;
-    getAssessment(assessmentId)
-      .then((response) => {
-        if (active) setAssessment(response.data?.data?.assessment || null);
+    Promise.all([getAssessment(assessmentId), getPatientTreatmentPlan(assessmentId)])
+      .then(([assessmentResponse, planResponse]) => {
+        if (active) {
+          setAssessment(assessmentResponse.data?.data?.assessment || null);
+          setTreatmentPlan(planResponse.data?.data?.plan || null);
+        }
       })
       .catch((error) => {
         if (active) setErrorMessage(error.response?.data?.message || "Unable to load this assessment.");
@@ -54,6 +59,14 @@ export default function AssessmentDetails() {
             <header className="rounded-2xl bg-white p-5 shadow-sm">
               <p className="text-sm capitalize text-teal-800">{assessment.status.replaceAll("_", " ")}</p>
               <h2 className="mt-1 text-3xl font-bold text-slate-900">{assessment.chief_complaint}</h2>
+              {assessment.status === "draft" && (
+                <Link
+                  to={`/patient/assessment/${assessment.id}/edit`}
+                  className="mt-3 inline-flex rounded-lg bg-teal-700 px-4 py-2 font-semibold text-white"
+                >
+                  Continue editing draft
+                </Link>
+              )}
               <p className="mt-2 text-sm text-slate-600">
                 Dr. {assessment.doctor_name} · {assessment.doctor_specialty}
               </p>
@@ -62,25 +75,58 @@ export default function AssessmentDetails() {
               </p>
             </header>
             <section className="space-y-3 rounded-2xl bg-white p-5">
-              <h2 className="text-lg font-semibold">Symptoms</h2>
+              <h2 className="text-lg font-semibold">Patient-reported symptoms</h2>
               {assessment.symptoms?.length
                 ? <ul className="list-disc space-y-1 pl-5 text-slate-700">{assessment.symptoms.map((item, index) => <li key={index}>{item}</li>)}</ul>
                 : <p className="text-slate-600">No symptoms listed.</p>}
+              <dl className="grid gap-3 text-sm sm:grid-cols-2">
+                <div><dt className="font-semibold">Onset</dt><dd>{displayText(assessment.symptom_onset)}</dd></div>
+                <div><dt className="font-semibold">Duration</dt><dd>{displayText(assessment.symptom_duration)}</dd></div>
+                <div><dt className="font-semibold">Frequency</dt><dd>{displayText(assessment.symptom_frequency)}</dd></div>
+                <div><dt className="font-semibold">Severity</dt><dd>{assessment.severity === null ? "Not provided" : `${assessment.severity} / 10`}</dd></div>
+                <div><dt className="font-semibold">Trend</dt><dd>{displayText(assessment.symptom_trend)}</dd></div>
+              </dl>
               <h3 className="font-semibold">Medical history</h3>
               <p className="whitespace-pre-wrap text-slate-700">{displayText(assessment.medical_history)}</p>
               <h3 className="font-semibold">Medications</h3>
               <p className="whitespace-pre-wrap text-slate-700">{displayText(assessment.medications)}</p>
               <h3 className="font-semibold">Allergies</h3>
               <p className="whitespace-pre-wrap text-slate-700">{displayText(assessment.allergies)}</p>
+              <h3 className="font-semibold">Previous treatment</h3>
+              <p className="whitespace-pre-wrap text-slate-700">{displayText(assessment.previous_treatment)}</p>
+              <h3 className="font-semibold">Additional notes</h3>
+              <p className="whitespace-pre-wrap text-slate-700">{displayText(assessment.additional_notes)}</p>
             </section>
             <section className="rounded-2xl bg-white p-5">
               <h2 className="text-lg font-semibold">Lab results</h2>
               {assessment.lab_results?.length ? (
                 <ul className="mt-3 divide-y divide-slate-100">
                   {assessment.lab_results.map((result, index) => (
-                    <li key={index} className="flex flex-wrap justify-between gap-2 py-2">
-                      <span>{result.name}</span>
-                      <span>{result.value} {result.unit}</span>
+                    <li key={index} className="space-y-1 py-3">
+                      {(() => {
+                        const review = assessment.lab_reviews?.find((item) => Number(item.result_index) === index);
+                        return (
+                          <>
+                            <div className="flex flex-wrap justify-between gap-2">
+                              <span>{result.name}</span>
+                              <span className="text-right">
+                                Original: {result.value} {result.unit}
+                                <span className={`block text-xs ${review ? "text-emerald-800" : "text-amber-800"}`}>
+                                  {review ? `Clinician-${review.verification_status} by ${review.reviewer_name}` : "Patient-entered — unverified"}
+                                </span>
+                              </span>
+                            </div>
+                            {result.reference_interval && <p className="text-sm text-slate-600">Reported reference interval: {result.reference_interval}</p>}
+                            {review && (
+                              <p className="text-sm text-slate-800">
+                                Clinician-reviewed value: {review.reviewed_result.name}: {review.reviewed_result.value} {review.reviewed_result.unit}
+                                {review.reviewed_result.reference_interval ? ` · Reported interval: ${review.reviewed_result.reference_interval}` : ""}
+                                <span className="block text-xs text-slate-500">Reviewed {new Date(review.created_at).toLocaleString()}</span>
+                              </p>
+                            )}
+                          </>
+                        );
+                      })()}
                     </li>
                   ))}
                 </ul>
@@ -106,7 +152,7 @@ export default function AssessmentDetails() {
             <OcrVerificationPanel status={assessment.ocr_status} />
             <AiSummaryPanel status={assessment.ai_summary_status} />
             <section className="rounded-2xl bg-white p-5">
-              <h2 className="text-lg font-semibold">Doctor review</h2>
+              <h2 className="text-lg font-semibold">Clinician-authored review</h2>
               <p className="mt-3 whitespace-pre-wrap text-slate-700">
                 {assessment.review_notes || "Your doctor has not added review notes yet."}
               </p>
@@ -116,6 +162,38 @@ export default function AssessmentDetails() {
                 </p>
               )}
             </section>
+            {treatmentPlan && (
+              <section className="space-y-3 rounded-2xl border border-emerald-200 bg-white p-5">
+                <div>
+                  <p className="text-sm font-semibold text-emerald-800">Doctor-approved plan</p>
+                  <h2 className="text-xl font-bold text-slate-900">Your care plan</h2>
+                  <p className="mt-1 text-sm text-slate-600">
+                    Approved by Dr. {treatmentPlan.doctor_name} on {new Date(treatmentPlan.approved_at).toLocaleString()}.
+                  </p>
+                </div>
+                {Object.entries({
+                  "Clinical assessment": treatmentPlan.plan_payload.clinical_assessment,
+                  "Recommendations": treatmentPlan.plan_payload.recommendations,
+                  "Medication instructions": treatmentPlan.plan_payload.medication_instructions,
+                  "Non-medication care": treatmentPlan.plan_payload.non_medication_care,
+                  "Investigations": treatmentPlan.plan_payload.investigations,
+                  "Referral": treatmentPlan.plan_payload.referral,
+                  "Warning signs": treatmentPlan.plan_payload.warning_signs,
+                  "Patient explanation": treatmentPlan.plan_payload.patient_explanation,
+                }).filter(([, value]) => value).map(([label, value]) => (
+                  <div key={label}>
+                    <h3 className="font-semibold text-slate-900">{label}</h3>
+                    <p className="whitespace-pre-wrap text-slate-700">{value}</p>
+                  </div>
+                ))}
+                <p className="text-sm text-slate-700">
+                  Follow-up: {treatmentPlan.plan_payload.follow_up_date || "Not specified"}
+                </p>
+                <p className="rounded-lg bg-amber-50 p-3 text-sm text-amber-950">
+                  Medication allergy and interaction checking is not available in this system. Contact your clinician or pharmacist if you have medication-safety concerns.
+                </p>
+              </section>
+            )}
           </>
         )}
       </div>

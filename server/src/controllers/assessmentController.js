@@ -24,6 +24,23 @@ const createAssessment = async (req, res) => {
   }
 };
 
+const updateDraftAssessment = async (req, res) => {
+  try {
+    const assessment = await assessmentService.updateDraftAssessment(
+      req.assessment.id,
+      req.user.id,
+      req.body
+    );
+    return res.status(200).json({
+      success: true,
+      message: "Assessment draft saved.",
+      data: { assessment },
+    });
+  } catch (error) {
+    return handleError(res, error, "Unable to update the assessment draft.");
+  }
+};
+
 const listPatientAssessments = async (req, res) => {
   try {
     const assessments = await assessmentService.listPatientAssessments(req.user.id);
@@ -44,7 +61,7 @@ const getDoctorInbox = async (req, res) => {
 
 const getAssessment = async (req, res) => {
   try {
-    const assessment = await assessmentService.getAssessmentById(req.assessment.id);
+    const assessment = await assessmentService.getAssessmentById(req.assessment.id, req.user.role);
     if (!assessment) {
       return res.status(404).json({ success: false, message: "Assessment not found." });
     }
@@ -85,6 +102,88 @@ const reviewAssessment = async (req, res) => {
   }
 };
 
+const reviewLabResult = async (req, res) => {
+  try {
+    const labReview = await assessmentService.reviewLabResult(
+      req.assessment.id,
+      Number(req.params.labIndex),
+      req.user.id,
+      req.body
+    );
+    return res.status(201).json({
+      success: true,
+      message: "Clinician lab review recorded. The patient-entered source value is preserved.",
+      data: { lab_review: labReview },
+    });
+  } catch (error) {
+    return handleError(res, error, "Unable to save the lab review.");
+  }
+};
+
+const createTreatmentPlan = async (req, res) => {
+  try {
+    const plan = await assessmentService.createTreatmentPlan(
+      req.assessment.id,
+      req.user.id,
+      req.body
+    );
+    return res.status(201).json({
+      success: true,
+      message: "Treatment plan draft saved. It is not available to the patient until approved.",
+      data: { plan },
+    });
+  } catch (error) {
+    return handleError(res, error, "Unable to save the treatment plan draft.");
+  }
+};
+
+const approveTreatmentPlan = async (req, res) => {
+  try {
+    const plan = await assessmentService.approveTreatmentPlan(
+      req.assessment.id,
+      req.params.planId,
+      req.user.id
+    );
+    return res.status(200).json({
+      success: true,
+      message: "Treatment plan approved and released to the patient.",
+      data: { plan },
+    });
+  } catch (error) {
+    return handleError(res, error, "Unable to approve the treatment plan.");
+  }
+};
+
+const updateTreatmentPlanDraft = async (req, res) => {
+  try {
+    const plan = await assessmentService.updateTreatmentPlanDraft(
+      req.assessment.id,
+      req.params.planId,
+      req.user.id,
+      req.body
+    );
+    return res.status(200).json({
+      success: true,
+      message: "Treatment plan draft updated.",
+      data: { plan },
+    });
+  } catch (error) {
+    return handleError(res, error, "Unable to update the treatment plan draft.");
+  }
+};
+
+const getPatientTreatmentPlan = async (req, res) => {
+  try {
+    const plan = await assessmentService.getPatientTreatmentPlan(
+      req.assessment.id,
+      req.user.id
+    );
+    return res.status(200).json({ success: true, data: { plan } });
+  } catch (error) {
+    return handleError(res, error, "Unable to load the approved treatment plan.");
+  }
+};
+
 const createFileUpload = async (req, res) => {
   try {
     const upload = await assessmentService.createAssessmentFileUpload(
@@ -114,11 +213,17 @@ const downloadFile = async (req, res) => {
 
 module.exports = {
   createAssessment,
+  updateDraftAssessment,
   listPatientAssessments,
   getDoctorInbox,
   getAssessment,
   submitAssessment,
   reviewAssessment,
+  reviewLabResult,
+  createTreatmentPlan,
+  approveTreatmentPlan,
+  updateTreatmentPlanDraft,
+  getPatientTreatmentPlan,
   createFileUpload,
   downloadFile,
 };

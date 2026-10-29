@@ -28,7 +28,13 @@ const requireAssessmentAccess = (...allowedRoles) => async (req, res, next) => {
         return res.status(404).json({ success: false, message: "Assessment not found." });
       }
       const doctorResult = await pool.query(
-        "SELECT id FROM doctors WHERE id = $1 AND user_id = $2 AND is_active = TRUE",
+        `SELECT d.id
+           FROM doctors d
+           JOIN clinics c ON c.id = d.clinic_id
+                            AND c.verification_status = 'verified'
+                            AND c.operational_status = 'active'
+          WHERE d.id = $1 AND d.user_id = $2
+            AND d.is_active = TRUE AND d.is_profile_approved = TRUE`,
         [assessment.doctor_id, req.user.id]
       );
       if (doctorResult.rowCount === 0) {

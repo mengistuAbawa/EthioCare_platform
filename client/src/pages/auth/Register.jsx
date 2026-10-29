@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Eye, EyeOff, HeartPulse, LockKeyhole, Mail, UserRound } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
-import { useAuth } from "../../context/AuthContext";
+import { useAuth } from "../../context/useAuth";
 
 export default function Register() {
   const navigate = useNavigate();
@@ -54,7 +54,7 @@ export default function Register() {
         confirmPassword: form.confirmPassword,
       });
 
-      setSuccess("Your patient account was created successfully. You can now sign in.");
+      setSuccess("Registration request processed. Try signing in. If you cannot access your account, contact your platform administrator through an established support channel.");
       setTimeout(() => navigate("/login"), 1200);
     } catch (error) {
       const validationErrors = error.response?.data?.errors;

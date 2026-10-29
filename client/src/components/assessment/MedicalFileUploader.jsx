@@ -1,10 +1,40 @@
+import { useEffect, useRef, useState } from "react";
+
 const MAX_FILE_SIZE = 8 * 1024 * 1024;
 const ACCEPTED_TYPES = ".pdf,.jpg,.jpeg,.png,.webp";
+const ACCEPTED_MIME_TYPES = new Set(["application/pdf", "image/jpeg", "image/png", "image/webp"]);
+
+function LocalImagePreview({ file }) {
+  const imageRef = useRef(null);
+
+  useEffect(() => {
+    if (!file.type.startsWith("image/")) return;
+    const url = URL.createObjectURL(file);
+    if (imageRef.current) imageRef.current.src = url;
+    return () => URL.revokeObjectURL(url);
+  }, [file]);
+
+  if (!file.type.startsWith("image/")) return null;
+  return <img ref={imageRef} alt={`Local preview of ${file.name}`} className="mt-2 max-h-40 rounded-lg border border-slate-200 object-contain" />;
+}
 
 export default function MedicalFileUploader({ files, onChange, disabled = false }) {
+  const [selectionError, setSelectionError] = useState("");
   const handleSelection = (event) => {
     const selected = Array.from(event.target.files || []);
-    onChange((current) => [...current, ...selected].slice(0, 5));
+    const invalidFile = selected.find((file) => !ACCEPTED_MIME_TYPES.has(file.type) || file.size < 1 || file.size > MAX_FILE_SIZE);
+    if (invalidFile) {
+      setSelectionError(`${invalidFile.name} is not a supported file or exceeds the 8 MB size limit.`);
+      event.target.value = "";
+      return;
+    }
+    if (files.length + selected.length > 5) {
+      setSelectionError("An assessment can include no more than 5 files.");
+      event.target.value = "";
+      return;
+    }
+    setSelectionError("");
+    onChange((current) => [...current, ...selected]);
     event.target.value = "";
   };
 
@@ -35,9 +65,7 @@ export default function MedicalFileUploader({ files, onChange, disabled = false 
             >
               <span className="min-w-0 truncate text-slate-700">
                 {file.name} ({Math.ceil(file.size / 1024)} KB)
-                {file.size > MAX_FILE_SIZE && (
-                  <span className="ml-2 text-rose-700">File exceeds 8 MB</span>
-                )}
+                <LocalImagePreview file={file} />
               </span>
               <button
                 type="button"
@@ -51,6 +79,7 @@ export default function MedicalFileUploader({ files, onChange, disabled = false 
           ))}
         </ul>
       )}
+      {selectionError && <p role="alert" className="mt-3 text-sm text-rose-700">{selectionError}</p>}
     </section>
   );
 }

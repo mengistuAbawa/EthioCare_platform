@@ -4,10 +4,11 @@ import ProtectedRoute from "./components/auth/ProtectedRoute";
 import RoleRoute from "./components/auth/RoleRoute";
 import Login from "./pages/auth/Login";
 import Register from "./pages/auth/Register";
+import PublicHome from "./pages/public/PublicHome";
 import SystemAdminDashboard from "./pages/dashboard/SystemAdminDashboard";
 import ClinicAdminDashboard from "./pages/dashboard/ClinicAdminDashboard";
-import DoctorDashboard from "./pages/dashboard/DoctorDashboard";
-import ReceptionDashboard from "./pages/dashboard/ReceptionDashboard";
+import DoctorPortalPage from "./pages/doctor/DoctorPortalPage";
+import ReceptionPortalPage from "./pages/dashboard/ReceptionPortalPage";
 import PatientDashboard from "./pages/dashboard/PatientDashboard";
 import ClinicDirectory from "./pages/clinics/ClinicDirectory";
 import ClinicDetails from "./pages/clinics/ClinicDetails";
@@ -45,7 +46,15 @@ export default function App() {
     <BrowserRouter>
       <AuthProvider>
         <Routes>
-          <Route path="/" element={<Navigate to="/login" replace />} />
+          <Route path="/" element={<PublicHome />} />
+          <Route path="/about" element={<PublicHome initialSection="about" />} />
+          <Route path="/how-it-works" element={<PublicHome initialSection="how-it-works" />} />
+          <Route path="/services" element={<PublicHome initialSection="services" />} />
+          <Route path="/for-patients" element={<PublicHome initialSection="for-patients" />} />
+          <Route path="/for-doctors" element={<PublicHome initialSection="for-doctors" />} />
+          <Route path="/for-clinics" element={<PublicHome initialSection="for-clinics" />} />
+          <Route path="/help" element={<PublicHome initialSection="faq" />} />
+          <Route path="/contact" element={<PublicHome initialSection="contact" />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/clinics" element={<ClinicDirectory />} />
@@ -195,6 +204,14 @@ export default function App() {
               }
             />
             <Route
+              path="/patient/assessment/:assessmentId/edit"
+              element={
+                <RoleRoute allowedRoles={["patient"]}>
+                  <HealthAssessment />
+                </RoleRoute>
+              }
+            />
+            <Route
               path="/patient/assessments"
               element={
                 <RoleRoute allowedRoles={["patient"]}>
@@ -246,17 +263,90 @@ export default function App() {
               path="/doctor/dashboard"
               element={
                 <RoleRoute allowedRoles={["doctor"]}>
-                  <DoctorDashboard />
+                  <DoctorPortalPage page="dashboard" />
                 </RoleRoute>
               }
             />
+            <Route path="/doctor/schedule" element={<RoleRoute allowedRoles={["doctor"]}><DoctorPortalPage page="schedule" /></RoleRoute>} />
+            <Route path="/doctor/appointments" element={<RoleRoute allowedRoles={["doctor"]}><DoctorPortalPage page="appointments" /></RoleRoute>} />
+            <Route path="/doctor/patients" element={<RoleRoute allowedRoles={["doctor"]}><DoctorPortalPage page="patients" /></RoleRoute>} />
+            <Route path="/doctor/medical-files" element={<RoleRoute allowedRoles={["doctor"]}><DoctorPortalPage page="files" /></RoleRoute>} />
+            <Route path="/doctor/lab-results" element={<RoleRoute allowedRoles={["doctor"]}><DoctorPortalPage page="labs" /></RoleRoute>} />
+            <Route path="/doctor/clinical-notes" element={<RoleRoute allowedRoles={["doctor"]}><DoctorPortalPage page="notes" /></RoleRoute>} />
+            <Route path="/doctor/medical-records" element={<RoleRoute allowedRoles={["doctor"]}><DoctorPortalPage page="records" /></RoleRoute>} />
+            <Route path="/doctor/consultations" element={<RoleRoute allowedRoles={["doctor"]}><DoctorPortalPage page="consultations" /></RoleRoute>} />
+            <Route path="/doctor/prescriptions-care-plans" element={<RoleRoute allowedRoles={["doctor"]}><DoctorPortalPage page="treatment" /></RoleRoute>} />
+            <Route path="/doctor/follow-ups" element={<RoleRoute allowedRoles={["doctor"]}><DoctorPortalPage page="followups" /></RoleRoute>} />
+            <Route path="/doctor/services" element={<RoleRoute allowedRoles={["doctor"]}><DoctorPortalPage page="services" /></RoleRoute>} />
+            <Route path="/doctor/notifications" element={<RoleRoute allowedRoles={["doctor"]}><DoctorPortalPage page="notifications" /></RoleRoute>} />
+            <Route path="/doctor/settings" element={<RoleRoute allowedRoles={["doctor"]}><DoctorPortalPage page="settings" /></RoleRoute>} />
             <Route
               path="/reception/dashboard"
               element={
                 <RoleRoute allowedRoles={["receptionist"]}>
-                  <ReceptionDashboard />
+                  <Navigate to="/receptionist/dashboard" replace />
                 </RoleRoute>
               }
+            />
+            <Route
+              path="/receptionist/dashboard"
+              element={<RoleRoute allowedRoles={["receptionist"]}><ReceptionPortalPage page="dashboard" /></RoleRoute>}
+            />
+            <Route
+              path="/receptionist/appointments"
+              element={<RoleRoute allowedRoles={["receptionist"]}><ReceptionPortalPage page="appointments" /></RoleRoute>}
+            />
+            <Route
+              path="/receptionist/appointments/today"
+              element={<RoleRoute allowedRoles={["receptionist"]}><ReceptionPortalPage page="appointments" /></RoleRoute>}
+            />
+            <Route
+              path="/receptionist/booking"
+              element={<RoleRoute allowedRoles={["receptionist"]}><ReceptionPortalPage page="booking" /></RoleRoute>}
+            />
+            <Route
+              path="/receptionist/appointments/register"
+              element={<RoleRoute allowedRoles={["receptionist"]}><ReceptionPortalPage page="booking" /></RoleRoute>}
+            />
+            <Route
+              path="/receptionist/patients"
+              element={<RoleRoute allowedRoles={["receptionist"]}><ReceptionPortalPage page="patients" /></RoleRoute>}
+            />
+            <Route
+              path="/receptionist/register-patient"
+              element={<RoleRoute allowedRoles={["receptionist"]}><ReceptionPortalPage page="patient-registration" /></RoleRoute>}
+            />
+            <Route
+              path="/receptionist/patients/register"
+              element={<RoleRoute allowedRoles={["receptionist"]}><ReceptionPortalPage page="patient-registration" /></RoleRoute>}
+            />
+            <Route
+              path="/receptionist/check-in-out"
+              element={<RoleRoute allowedRoles={["receptionist"]}><ReceptionPortalPage page="check-in-out" /></RoleRoute>}
+            />
+            <Route
+              path="/receptionist/doctors-services"
+              element={<RoleRoute allowedRoles={["receptionist"]}><ReceptionPortalPage page="doctors-services" /></RoleRoute>}
+            />
+            <Route
+              path="/receptionist/doctor-availability"
+              element={<RoleRoute allowedRoles={["receptionist"]}><ReceptionPortalPage page="doctor-availability" /></RoleRoute>}
+            />
+            <Route
+              path="/receptionist/services"
+              element={<RoleRoute allowedRoles={["receptionist"]}><ReceptionPortalPage page="services" /></RoleRoute>}
+            />
+            <Route
+              path="/receptionist/queue"
+              element={<RoleRoute allowedRoles={["receptionist"]}><ReceptionPortalPage page="queue" /></RoleRoute>}
+            />
+            <Route
+              path="/receptionist/notifications"
+              element={<RoleRoute allowedRoles={["receptionist"]}><ReceptionPortalPage page="notifications" /></RoleRoute>}
+            />
+            <Route
+              path="/receptionist/settings"
+              element={<RoleRoute allowedRoles={["receptionist"]}><ReceptionPortalPage page="settings" /></RoleRoute>}
             />
             <Route
               path="/patient/dashboard"

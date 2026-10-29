@@ -227,17 +227,6 @@ const createClinic = async (req, res) => {
     try {
       await client.query("BEGIN");
 
-      const userRoleUpdateNeeded = !["system_admin", "clinic_admin"].includes(req.user.role);
-
-      if (userRoleUpdateNeeded) {
-        await client.query(
-          `UPDATE users
-           SET role = 'clinic_admin', updated_at = now()
-           WHERE id = $1`,
-          [req.user.id]
-        );
-      }
-
       const clinicResult = await client.query(
         `INSERT INTO clinics (slug, name, contact_email, contact_phone, city, region, address, verification_status, created_by)
          VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending', $8)

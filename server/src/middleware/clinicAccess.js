@@ -14,7 +14,7 @@ const getClinicMembership = async (userId, clinicId) => {
 
 const requireOperationalClinic = async (clinicId, res) => {
   const result = await pool.query(
-    "SELECT operational_status FROM clinics WHERE id = $1",
+    "SELECT operational_status, verification_status FROM clinics WHERE id = $1",
     [clinicId]
   );
   if (!result.rowCount) {
@@ -23,6 +23,10 @@ const requireOperationalClinic = async (clinicId, res) => {
   }
   if (result.rows[0].operational_status === "suspended") {
     res.status(403).json({ success: false, message: "This clinic is suspended." });
+    return false;
+  }
+  if (result.rows[0].verification_status !== "verified") {
+    res.status(403).json({ success: false, message: "This clinic is not verified for operational access." });
     return false;
   }
   return true;

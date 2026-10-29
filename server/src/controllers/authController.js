@@ -55,9 +55,9 @@ const register = async (req, res) => {
     );
 
     if (existingUser.rowCount > 0) {
-      return res.status(409).json({
-        success: false,
-        message: "An account with this email already exists.",
+      return res.status(200).json({
+        success: true,
+        message: "Registration request processed. Try signing in; if you cannot access your account, contact your platform administrator through an established support channel.",
       });
     }
 
@@ -83,18 +83,15 @@ const register = async (req, res) => {
       },
     });
 
-    return res.status(201).json({
+    return res.status(200).json({
       success: true,
-      message: "Patient account created successfully.",
-      data: {
-        user: serializeUser(user),
-      },
+      message: "Registration request processed. Try signing in; if you cannot access your account, contact your platform administrator through an established support channel.",
     });
   } catch (error) {
     if (error.code === "23505") {
-      return res.status(409).json({
-        success: false,
-        message: "An account with this email already exists.",
+      return res.status(200).json({
+        success: true,
+        message: "Registration request processed. Try signing in; if you cannot access your account, contact your platform administrator through an established support channel.",
       });
     }
 

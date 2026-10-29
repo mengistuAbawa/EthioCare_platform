@@ -1,7 +1,7 @@
 import { CalendarCheck2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { useAuth } from "../../context/AuthContext";
+import { useAuth } from "../../context/useAuth";
 import api from "../../services/api";
 
 export default function ReceptionDashboard() {

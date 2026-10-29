@@ -8,6 +8,9 @@ export default function AssessmentHistory() {
   const [assessments, setAssessments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
 
   useEffect(() => {
     let active = true;
@@ -26,6 +29,13 @@ export default function AssessmentHistory() {
     };
   }, []);
 
+  const filteredAssessments = assessments.filter((assessment) => {
+    const submittedDate = new Date(assessment.created_at).toISOString().slice(0, 10);
+    return (!statusFilter || assessment.status === statusFilter) &&
+      (!fromDate || submittedDate >= fromDate) &&
+      (!toDate || submittedDate <= toDate);
+  });
+
   return (
     <div>
       <div className="mx-auto max-w-4xl">
@@ -40,11 +50,33 @@ export default function AssessmentHistory() {
         </header>
         {loading && <p className="rounded-xl bg-white p-5 text-slate-600">Loading assessments…</p>}
         {errorMessage && <p role="alert" className="rounded-xl bg-rose-50 p-5 text-rose-800">{errorMessage}</p>}
+        {!loading && !errorMessage && (
+          <section aria-label="Filter assessment history" className="grid gap-3 rounded-2xl bg-white p-4 sm:grid-cols-3">
+            <label className="text-sm font-medium text-slate-700">
+              Status
+              <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2">
+                <option value="">All statuses</option>
+                <option value="draft">Draft</option>
+                <option value="submitted">Submitted</option>
+                <option value="in_review">In review</option>
+                <option value="reviewed">Reviewed by doctor</option>
+              </select>
+            </label>
+            <label className="text-sm font-medium text-slate-700">
+              From
+              <input type="date" value={fromDate} onChange={(event) => setFromDate(event.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2" />
+            </label>
+            <label className="text-sm font-medium text-slate-700">
+              To
+              <input type="date" value={toDate} onChange={(event) => setToDate(event.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2" />
+            </label>
+          </section>
+        )}
         {!loading && !errorMessage && assessments.length === 0 && (
           <p className="rounded-xl bg-white p-5 text-slate-600">You have no assessments yet.</p>
         )}
         <div className="space-y-3">
-          {assessments.map((assessment) => (
+          {filteredAssessments.map((assessment) => (
             <Link
               key={assessment.id}
               to={`/patient/assessments/${assessment.id}`}
@@ -66,6 +98,9 @@ export default function AssessmentHistory() {
               </p>
             </Link>
           ))}
+          {!loading && !errorMessage && assessments.length > 0 && filteredAssessments.length === 0 && (
+            <p className="rounded-xl bg-white p-5 text-slate-600">No assessments match those filters.</p>
+          )}
         </div>
       </div>
     </div>

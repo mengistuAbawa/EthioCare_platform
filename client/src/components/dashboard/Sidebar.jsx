@@ -23,7 +23,9 @@ export default function Sidebar({
           {!collapsed && (
             <div className="min-w-0">
               <p className="truncate text-sm font-bold text-slate-950">
-                {role === "system_admin"
+                {role === "receptionist"
+                  ? "EthioCare"
+                  : role === "system_admin"
                   ? "EthioCare Admin"
                   : role === "clinic_admin"
                     ? "EthioCare Clinic"
@@ -32,7 +34,11 @@ export default function Sidebar({
                       : "EthioCare"}
               </p>
               <p className="truncate text-xs text-slate-500">
-                {role === "system_admin"
+                {role === "doctor"
+                  ? "Doctor Portal"
+                  : role === "receptionist"
+                  ? "Reception Portal"
+                  : role === "system_admin"
                   ? "Platform-wide administration"
                   : role === "clinic_admin"
                     ? "Clinic administration"
@@ -40,6 +46,12 @@ export default function Sidebar({
                       ? "Patient Portal"
                     : "Care management"}
               </p>
+              {role === "doctor" && (
+                <p className="truncate text-[10px] leading-3 text-slate-500">Clinical Care &amp; Patient Follow-up</p>
+              )}
+              {role === "receptionist" && (
+                <p className="truncate text-[10px] leading-3 text-slate-500">Front Desk &amp; Patient Flow</p>
+              )}
             </div>
           )}
         </div>

@@ -1,36 +1,63 @@
 # EthioCare
 
-EthioCare is a full-stack clinic appointment platform built with React, Node.js, Express.js, and PostgreSQL.
-It is intended to support clinic discovery, service exploration, and appointment booking, with management tools
-for clinic operations.
+EthioCare is a clinic discovery, appointment, patient assessment, and clinic-operations platform built with React/Vite, Express, and PostgreSQL.
 
-## Technology Stack
+## Repository
 
-- React + Vite
-- Tailwind CSS
-- Node.js + Express
-- PostgreSQL
+- `client/` — React 19, Vite, Tailwind CSS, and React Router
+- `server/` — Express 5 API, JWT authentication, RBAC, and PostgreSQL access
+- `database/` — schema, migrations, and optional development seeds
+- `docs/` — feature and deployment documentation
 
-## Project Structure
+## Local development
 
-- client: React frontend
-- server: Express REST API
-- database: Database scripts
-- docs: Project documentation
+Prerequisites: Node.js 20.19+ (or 22.12+), npm, and PostgreSQL 12+ with `btree_gist` enabled.
 
-## Development
+1. Configure the database by following [database setup](./database/README.md).
+2. Copy `server/.env.example` to `server/.env`, set the database connection and a long random `JWT_SECRET`, and configure a private S3-compatible bucket if testing medical-file uploads.
+3. In one terminal:
 
-Frontend: http://localhost:5173
+   ```cmd
+   cd /d "D:\Mobile Appliction Development\EthioCare\server"
+   npm ci
+   npm run dev
+   ```
 
-Backend: http://localhost:5000
+4. In a second terminal:
 
-API health check: http://localhost:5000/api/health
+   ```cmd
+   cd /d "D:\Mobile Appliction Development\EthioCare\client"
+   npm ci
+   npm run dev
+   ```
 
-## Environment
+The client runs at `http://localhost:5173`, the API at `http://localhost:5000`, and the database readiness endpoint at `http://localhost:5000/api/health`.
 
-Configure the backend variables in server/.env.
-Never commit passwords, tokens, or production secrets.
+## Validate
 
-## Status
+```cmd
+cd /d "D:\Mobile Appliction Development\EthioCare\server"
+npm test
+```
 
-Initial project setup.
+```cmd
+cd /d "D:\Mobile Appliction Development\EthioCare\client"
+npm run lint
+npm run build
+```
+
+## Deploy
+
+Deployment configuration targets a Render Node web service and Vercel static frontend:
+
+- Render Blueprint: [`render.yaml`](./render.yaml)
+- Vercel SPA routing: [`client/vercel.json`](./client/vercel.json)
+- Deployment and production-readiness checklist: [docs/deployment.md](./docs/deployment.md)
+
+The deployment configuration does not create a database, storage bucket, credentials, or initial system administrator. Apply and verify migrations explicitly before deploying. Do not use the free Render plan for production clinical data.
+
+AI and OCR are intentionally `not_configured`; the application does not send health information to external analysis services or generate diagnostic results.
+
+## Security and privacy
+
+Never commit `.env` files, API keys, database URLs, or storage credentials. Use the hosting provider's secret environment-variable manager. Do not use real patient information until privacy, clinical, legal, security, retention, backup, and operational requirements have been independently reviewed and approved.

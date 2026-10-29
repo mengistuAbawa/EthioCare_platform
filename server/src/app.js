@@ -3,6 +3,7 @@ const cors = require("cors");
 const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
 const morgan = require("morgan");
+const pool = require("./config/db");
 const authRoutes = require("./routes/authRoutes");
 const clinicRoutes = require("./routes/clinicRoutes");
 const doctorRoutes = require("./routes/doctorRoutes");
@@ -10,7 +11,9 @@ const clinicDoctorRoutes = require("./routes/clinicDoctorRoutes");
 const assessmentRoutes = require("./routes/assessmentRoutes");
 const notificationRoutes = require("./routes/notificationRoutes");
 const patientAppointmentRoutes = require("./routes/patientAppointmentRoutes");
+const doctorPortalRoutes = require("./routes/doctorPortalRoutes");
 const adminRoutes = require("./routes/adminRoutes");
+const receptionistRoutes = require("./routes/receptionistRoutes");
 const errorHandler = require("./middleware/errorHandler");
 
 const app = express();
@@ -50,12 +53,21 @@ app.get("/", (req, res) => {
   });
 });
 
-app.get("/api/health", (req, res) => {
-  res.status(200).json({
-    success: true,
-    message: "EthioCare API is running",
-    timestamp: new Date().toISOString(),
-  });
+app.get("/api/health", async (req, res) => {
+  try {
+    await pool.query("SELECT 1");
+    return res.status(200).json({
+      success: true,
+      message: "EthioCare API and database are ready",
+      timestamp: new Date().toISOString(),
+    });
+  } catch {
+    console.error("API readiness check failed.");
+    return res.status(503).json({
+      success: false,
+      message: "The API is temporarily unavailable.",
+    });
+  }
 });
 
 app.use("/api/auth", authRoutes);
@@ -65,7 +77,9 @@ app.use("/api/clinics", clinicDoctorRoutes);
 app.use("/api/assessments", assessmentRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/appointments", patientAppointmentRoutes);
+app.use("/api/doctor-portal", doctorPortalRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/receptionist", receptionistRoutes);
 
 app.use((req, res) => {
   res.status(404).json({

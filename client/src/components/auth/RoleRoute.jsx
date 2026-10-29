@@ -1,6 +1,6 @@
 import { Navigate } from "react-router-dom";
 import AccessDenied from "./AccessDenied";
-import { useAuth } from "../../context/AuthContext";
+import { useAuth } from "../../context/useAuth";
 
 export default function RoleRoute({ allowedRoles, children, fallbackPath = "/login" }) {
   const { user, loading } = useAuth();

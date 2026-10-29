@@ -1,7 +1,7 @@
 import { Building2, PlusCircle, ShieldCheck } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useCallback, useEffect, useState } from "react";
-import { useAuth } from "../../context/AuthContext";
+import { useAuth } from "../../context/useAuth";
 import api from "../../services/api";
 
 const emptyForm = {

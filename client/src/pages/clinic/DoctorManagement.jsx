@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { CheckCircle2, CircleUserRound, Plus, Stethoscope, UserRoundX } from "lucide-react";
 import { useParams } from "react-router-dom";
-import { useAuth } from "../../context/AuthContext";
+import { useAuth } from "../../context/useAuth";
 import {
   createDoctorProfile,
   deactivateClinicDoctor,

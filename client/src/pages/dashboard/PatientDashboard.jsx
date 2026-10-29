@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { ArrowRight, Bell, CalendarPlus, ClipboardList, Stethoscope } from "lucide-react";
 import { Link } from "react-router-dom";
-import { useAuth } from "../../context/AuthContext";
+import { useAuth } from "../../context/useAuth";
 import EmptyState from "../../components/dashboard/EmptyState";
 import ErrorState from "../../components/dashboard/ErrorState";
 import LoadingState from "../../components/dashboard/LoadingState";
@@ -60,6 +60,13 @@ export default function PatientDashboard() {
   }
 
   const recentAssessments = assessments.slice(0, 3);
+  const draftCount = assessments.filter((assessment) => assessment.status === "draft").length;
+  const awaitingReviewCount = assessments.filter((assessment) => ["submitted", "in_review"].includes(assessment.status)).length;
+  const reviewedCount = assessments.filter((assessment) => assessment.status === "reviewed").length;
+  const approvedPlanCount = assessments.reduce(
+    (total, assessment) => total + Number(assessment.approved_treatment_plan_count || 0),
+    0
+  );
 
   return (
     <div className="space-y-6">
@@ -77,11 +84,31 @@ export default function PatientDashboard() {
         </Link>
       </section>
 
-      <section aria-label="Patient overview" className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+      <section aria-label="Patient overview" className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <Link to="/patient/assessments" className={`${cardClass} transition-colors hover:border-teal-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700`}>
           <ClipboardList className="text-teal-700" size={21} aria-hidden="true" />
           <p className="mt-3 text-sm text-slate-600">Health assessments</p>
           <p className="mt-1 text-3xl font-bold text-slate-950">{assessments.length}</p>
+        </Link>
+        <Link to="/patient/assessments" className={`${cardClass} transition-colors hover:border-teal-300`}>
+          <ClipboardList className="text-teal-700" size={21} aria-hidden="true" />
+          <p className="mt-3 text-sm text-slate-600">Draft assessments</p>
+          <p className="mt-1 text-3xl font-bold text-slate-950">{draftCount}</p>
+        </Link>
+        <Link to="/patient/assessments" className={`${cardClass} transition-colors hover:border-teal-300`}>
+          <ClipboardList className="text-amber-700" size={21} aria-hidden="true" />
+          <p className="mt-3 text-sm text-slate-600">Awaiting doctor review</p>
+          <p className="mt-1 text-3xl font-bold text-slate-950">{awaitingReviewCount}</p>
+        </Link>
+        <Link to="/patient/assessments" className={`${cardClass} transition-colors hover:border-teal-300`}>
+          <Stethoscope className="text-violet-700" size={21} aria-hidden="true" />
+          <p className="mt-3 text-sm text-slate-600">Reviewed by doctor</p>
+          <p className="mt-1 text-3xl font-bold text-slate-950">{reviewedCount}</p>
+        </Link>
+        <Link to="/patient/assessments" className={`${cardClass} transition-colors hover:border-teal-300`}>
+          <Stethoscope className="text-emerald-700" size={21} aria-hidden="true" />
+          <p className="mt-3 text-sm text-slate-600">Available doctor-approved plans</p>
+          <p className="mt-1 text-3xl font-bold text-slate-950">{approvedPlanCount}</p>
         </Link>
         <Link to="/patient/notifications" className={`${cardClass} transition-colors hover:border-teal-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700`}>
           <Bell className="text-teal-700" size={21} aria-hidden="true" />

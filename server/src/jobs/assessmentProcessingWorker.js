@@ -6,7 +6,10 @@ const processJob = async (job) => {
   const result = job.job_type === "ocr"
     ? await extractTextFromAssessmentFile(job.assessment_id)
     : await summarizeAssessment(job.assessment_id);
-  const status = result.status === "disabled" ? "disabled" : result.status;
+  if (!["not_configured", "completed", "failed"].includes(result.status)) {
+    throw new Error("Assessment provider returned an unsupported processing status.");
+  }
+  const status = result.status;
   const column = job.job_type === "ocr" ? "ocr_status" : "ai_summary_status";
 
   await pool.query(

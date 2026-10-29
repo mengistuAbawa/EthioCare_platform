@@ -5,11 +5,17 @@ const { requireAssessmentAccess } = require("../middleware/assessmentAccess");
 const { validateAssessmentUpload } = require("../middleware/uploadValidation");
 const {
   createAssessment,
+  updateDraftAssessment,
   listPatientAssessments,
   getDoctorInbox,
   getAssessment,
   submitAssessment,
   reviewAssessment,
+  reviewLabResult,
+  createTreatmentPlan,
+  approveTreatmentPlan,
+  updateTreatmentPlanDraft,
+  getPatientTreatmentPlan,
   createFileUpload,
   downloadFile,
 } = require("../controllers/assessmentController");
@@ -19,6 +25,10 @@ const {
   fileIdRules,
   createAssessmentRules,
   reviewAssessmentRules,
+  treatmentPlanRules,
+  treatmentPlanApprovalRules,
+  treatmentPlanUpdateRules,
+  labResultReviewRules,
 } = require("../validators/assessmentValidators");
 
 const router = express.Router();
@@ -33,6 +43,24 @@ router.post(
   createAssessment
 );
 router.get("/", authorize("patient"), listPatientAssessments);
+router.put(
+  "/:assessmentId",
+  authorize("patient"),
+  assessmentIdRules,
+  handleAssessmentValidationErrors,
+  requireAssessmentAccess("patient"),
+  createAssessmentRules,
+  handleAssessmentValidationErrors,
+  updateDraftAssessment
+);
+router.get(
+  "/:assessmentId/treatment-plan",
+  authorize("patient"),
+  assessmentIdRules,
+  handleAssessmentValidationErrors,
+  requireAssessmentAccess("patient"),
+  getPatientTreatmentPlan
+);
 router.get(
   "/:assessmentId",
   assessmentIdRules,
@@ -48,6 +76,30 @@ router.patch(
   requireAssessmentAccess("patient"),
   submitAssessment
 );
+router.post(
+  "/:assessmentId/treatment-plans",
+  authorize("doctor"),
+  treatmentPlanRules,
+  handleAssessmentValidationErrors,
+  requireAssessmentAccess("doctor"),
+  createTreatmentPlan
+);
+router.patch(
+  "/:assessmentId/treatment-plans/:planId",
+  authorize("doctor"),
+  treatmentPlanUpdateRules,
+  handleAssessmentValidationErrors,
+  requireAssessmentAccess("doctor"),
+  updateTreatmentPlanDraft
+);
+router.post(
+  "/:assessmentId/treatment-plans/:planId/approve",
+  authorize("doctor"),
+  treatmentPlanApprovalRules,
+  handleAssessmentValidationErrors,
+  requireAssessmentAccess("doctor"),
+  approveTreatmentPlan
+);
 router.patch(
   "/:assessmentId/review",
   authorize("doctor"),
@@ -55,6 +107,14 @@ router.patch(
   handleAssessmentValidationErrors,
   requireAssessmentAccess("doctor"),
   reviewAssessment
+);
+router.post(
+  "/:assessmentId/lab-results/:labIndex/reviews",
+  authorize("doctor"),
+  labResultReviewRules,
+  handleAssessmentValidationErrors,
+  requireAssessmentAccess("doctor"),
+  reviewLabResult
 );
 router.post(
   "/:assessmentId/files",

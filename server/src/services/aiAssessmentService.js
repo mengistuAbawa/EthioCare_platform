@@ -1,7 +1,7 @@
 const summarizeAssessment = async () => ({
-  status: "disabled",
+  status: "not_configured",
   summary: null,
-  message: "AI summaries are disabled. No health data is sent to an AI provider.",
+  message: "No validated AI provider is configured. No health data is sent to an AI provider.",
 });
 
 module.exports = { summarizeAssessment };
