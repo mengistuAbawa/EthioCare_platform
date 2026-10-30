@@ -1,11 +1,16 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import EmptyState from "../../components/dashboard/EmptyState";
+import ErrorState from "../../components/dashboard/ErrorState";
+import LoadingState from "../../components/dashboard/LoadingState";
+import { PageHeader, StatusBadge } from "../../components/ui/Primitives";
 import { getDoctorAssessmentInbox } from "../../services/assessmentService";
 
 export default function AssessmentInbox() {
   const [assessments, setAssessments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     let active = true;
@@ -22,43 +27,51 @@ export default function AssessmentInbox() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [attempt]);
 
   return (
     <div>
       <div className="mx-auto max-w-4xl">
-        <header className="mb-6">
-          <p className="text-sm font-semibold uppercase tracking-wide text-violet-800">Doctor</p>
-          <h2 className="text-3xl font-bold text-slate-900">Assessment inbox</h2>
-          <p className="mt-1 text-slate-600">Only assessments explicitly assigned to you appear here.</p>
-        </header>
-        {loading && <p className="rounded-xl bg-white p-5 text-slate-600">Loading inbox…</p>}
-        {errorMessage && <p role="alert" className="rounded-xl bg-rose-50 p-5 text-rose-800">{errorMessage}</p>}
+      <PageHeader
+        title="Assessment inbox"
+        description="Only assessments explicitly assigned to you appear here."
+        className="mb-6"
+      />
+      {loading && <LoadingState label="Loading your assessment inbox..." />}
+      {errorMessage && (
+        <ErrorState
+          message={errorMessage}
+          onRetry={() => {
+            setLoading(true);
+            setErrorMessage("");
+            setAttempt((current) => current + 1);
+          }}
+          className="mb-4"
+        />
+      )}
         {!loading && !errorMessage && assessments.length === 0 && (
-          <p className="rounded-xl bg-white p-5 text-slate-600">There are no submitted assessments assigned to you.</p>
+        <EmptyState title="No assigned assessments" description="Submitted assessments assigned to you will appear here." />
         )}
-        <div className="space-y-3">
+      {!loading && !errorMessage && assessments.length > 0 && <div className="space-y-3">
           {assessments.map((assessment) => (
             <Link
               key={assessment.id}
               to={`/doctor/assessments/${assessment.id}`}
-              className="block rounded-2xl border border-slate-200 bg-white p-5 hover:border-violet-400"
+            className="ui-card block p-5 transition-colors hover:border-brand-teal"
             >
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <h2 className="font-semibold text-slate-900">{assessment.chief_complaint}</h2>
-                  <p className="mt-1 text-sm text-slate-600">Patient: {assessment.patient_name}</p>
+                  {assessment.patient_name && <p className="mt-1 text-sm text-slate-600">Patient: {assessment.patient_name}</p>}
                 </div>
-                <span className="rounded-full bg-violet-50 px-3 py-1 text-sm capitalize text-violet-900">
-                  {assessment.status.replaceAll("_", " ")}
-                </span>
+                <StatusBadge status={assessment.status} />
               </div>
               <p className="mt-3 text-xs text-slate-500">
                 Submitted {assessment.submitted_at ? new Date(assessment.submitted_at).toLocaleString() : "recently"}
               </p>
             </Link>
           ))}
-        </div>
+        </div>}
       </div>
     </div>
   );

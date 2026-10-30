@@ -5,7 +5,7 @@ import EmptyState from "../../components/dashboard/EmptyState";
 import ErrorState from "../../components/dashboard/ErrorState";
 import LoadingState from "../../components/dashboard/LoadingState";
 
-const cardClass = "rounded-2xl border border-slate-200 bg-white p-5";
+const cardClass = "ui-card p-5";
 const displayDate = (value) => new Date(value).toLocaleDateString(undefined, { month: "short", day: "numeric" });
 
 function TrendChart({ title, data = [] }) {

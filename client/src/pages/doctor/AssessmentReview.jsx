@@ -1,7 +1,10 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
+import ErrorState from "../../components/dashboard/ErrorState";
+import LoadingState from "../../components/dashboard/LoadingState";
 import AiSummaryPanel from "../../components/assessment/AiSummaryPanel";
 import OcrVerificationPanel from "../../components/assessment/OcrVerificationPanel";
+import { Button, Card, PageHeader, StatusBadge } from "../../components/ui/Primitives";
 import {
   approveTreatmentPlan,
   createTreatmentPlan,
@@ -224,20 +227,23 @@ export default function AssessmentReview() {
         <Link to="/doctor/assessments" className="font-semibold text-teal-800 hover:underline">
           ← Assessment inbox
         </Link>
-        {loading && <p className="rounded-xl bg-white p-5">Loading assessment…</p>}
-        {errorMessage && <p role="alert" className="rounded-xl bg-rose-50 p-4 text-rose-800">{errorMessage}</p>}
+        {loading && <LoadingState label="Loading patient assessment..." />}
+        {errorMessage && <ErrorState message={errorMessage} className="mb-4" />}
         {assessment && (
           <>
-            <header className="rounded-2xl bg-white p-5 shadow-sm">
-              <p className="text-sm capitalize text-violet-800">{assessment.status.replaceAll("_", " ")}</p>
-              <h2 className="mt-1 text-3xl font-bold text-slate-900">{assessment.chief_complaint}</h2>
-              <p className="mt-2 text-sm text-slate-600">Patient: {assessment.patient_name}</p>
+            <Card as="header">
+              <StatusBadge status={assessment.status} />
+              <PageHeader
+                title={assessment.chief_complaint}
+                description={`Patient: ${assessment.patient_name}`}
+                className="mt-2"
+              />
               <p className="mt-1 text-xs text-slate-500">
                 Submitted {assessment.submitted_at ? new Date(assessment.submitted_at).toLocaleString() : "not submitted"}
               </p>
-            </header>
+            </Card>
 
-            <section className="space-y-3 rounded-2xl bg-white p-5">
+            <section className="ui-card space-y-3 p-5">
               <h2 className="text-lg font-semibold">Patient-reported symptoms and history</h2>
               {assessment.symptoms?.length
                 ? <ul className="list-disc space-y-1 pl-5 text-slate-700">{assessment.symptoms.map((item, index) => <li key={index}>{item}</li>)}</ul>
@@ -265,7 +271,7 @@ export default function AssessmentReview() {
                 : <p className="text-slate-600">No listed warning signs were reported in the submitted screening.</p>}
             </section>
 
-            <section className="rounded-2xl bg-white p-5">
+            <section className="ui-card p-5">
               <h2 className="text-lg font-semibold">Patient-entered lab values and clinician review</h2>
               {assessment.lab_results?.length ? (
                 <ul className="mt-3 divide-y divide-slate-100">
@@ -317,7 +323,7 @@ export default function AssessmentReview() {
               ) : <p className="mt-2 text-slate-600">No results provided.</p>}
             </section>
 
-            <section className="rounded-2xl bg-white p-5">
+            <section className="ui-card p-5">
               <h2 className="text-lg font-semibold">Original uploaded files</h2>
               <ul className="mt-3 space-y-2">
                 {assessment.files?.map((file) => (
@@ -335,7 +341,7 @@ export default function AssessmentReview() {
             <OcrVerificationPanel status={assessment.ocr_status} />
             <AiSummaryPanel status={assessment.ai_summary_status} />
 
-            <form onSubmit={handleSaveReview} className="space-y-4 rounded-2xl bg-white p-5">
+            <form onSubmit={handleSaveReview} className="ui-card space-y-4 p-5">
               <h2 className="text-lg font-semibold">Clinician-authored review</h2>
               <p className="text-sm text-slate-600">
                 Record your clinical review. Patient-reported data and any future machine-generated information are not confirmed findings.
@@ -357,13 +363,13 @@ export default function AssessmentReview() {
                 </select>
               </label>
               {message && <p role="status" className="text-emerald-800">{message}</p>}
-              <button type="submit" disabled={saving} className="rounded-xl bg-teal-700 px-5 py-3 font-semibold text-white hover:bg-teal-800 disabled:opacity-50">
+              <Button type="submit" loading={saving}>
                 {saving ? "Saving…" : status === "reviewed" ? "Confirm and save reviewed note" : "Save review"}
-              </button>
+              </Button>
             </form>
 
             {assessment.review_history?.length > 0 && (
-              <section className="rounded-2xl bg-white p-5">
+              <section className="ui-card p-5">
                 <h2 className="text-lg font-semibold">Clinical review history</h2>
                 <ol className="mt-3 space-y-3">
                   {assessment.review_history.map((version) => (
@@ -377,7 +383,7 @@ export default function AssessmentReview() {
               </section>
             )}
 
-            <section className="space-y-4 rounded-2xl bg-white p-5">
+            <section className="ui-card space-y-4 p-5">
               <div>
                 <h2 className="text-lg font-semibold">Doctor-directed treatment plan</h2>
                 <p className="mt-1 text-sm text-slate-600">
@@ -415,9 +421,9 @@ export default function AssessmentReview() {
                   />
                 </label>
                 {planMessage && <p role="status" className="text-sm text-emerald-800">{planMessage}</p>}
-                <button type="submit" disabled={savingPlan || assessment.status !== "reviewed"} className="rounded-xl border border-violet-700 px-4 py-2 font-semibold text-violet-800 disabled:opacity-50">
+                <Button type="submit" variant="secondary" loading={savingPlan} disabled={assessment.status !== "reviewed"}>
                   {savingPlan ? "Saving…" : "Save treatment plan draft"}
-                </button>
+                </Button>
               </form>
               <div className="space-y-2 border-t border-slate-100 pt-4">
                 <h3 className="font-semibold">Plan versions</h3>
@@ -425,9 +431,9 @@ export default function AssessmentReview() {
                   <div key={plan.id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 p-3">
                     <span className="text-sm">Version {plan.version} · {plan.status.replaceAll("_", " ")}</span>
                     {plan.status === "draft" && (
-                      <button type="button" disabled={savingPlan} onClick={() => approvePlan(plan)} className="rounded-lg bg-violet-700 px-3 py-2 text-sm font-semibold text-white disabled:opacity-50">
+                      <Button type="button" loading={savingPlan} onClick={() => approvePlan(plan)}>
                         Approve and release
-                      </button>
+                      </Button>
                     )}
                   </div>
                 ))}

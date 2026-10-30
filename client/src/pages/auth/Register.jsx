@@ -1,7 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Eye, EyeOff, HeartPulse, LockKeyhole, Mail, UserRound } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/useAuth";
+import { Button, IconButton } from "../../components/ui/Primitives";
+import api from "../../services/api";
 
 export default function Register() {
   const navigate = useNavigate();
@@ -18,6 +20,14 @@ export default function Register() {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
   const [success, setSuccess] = useState("");
+  const [publicSettings, setPublicSettings] = useState(null);
+  const [settingsError, setSettingsError] = useState("");
+
+  useEffect(() => {
+    api.get("/settings")
+      .then((response) => setPublicSettings(response.data?.data))
+      .catch(() => setSettingsError("Registration availability could not be checked. Please try again later."));
+  }, []);
 
   const handleChange = (event) => {
     const { name, value } = event.target;
@@ -92,33 +102,53 @@ export default function Register() {
             </div>
             <div>
               <h1 className="text-2xl font-bold text-slate-900">Create patient account</h1>
-              <p className="text-sm text-slate-500">Join EthioCare for secure appointment access</p>
+              <p className="text-sm text-slate-500">Public registration is for patients only.</p>
             </div>
           </div>
         </div>
 
+        {settingsError && (
+          <p role="alert" className="mb-5 rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800">
+            {settingsError}
+          </p>
+        )}
+        {publicSettings?.maintenance_mode && (
+          <p role="status" className="mb-5 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+            {publicSettings.maintenance_message}
+          </p>
+        )}
+        {publicSettings && !publicSettings.patient_registration_enabled && (
+          <p role="status" className="mb-5 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+            Patient registration is currently unavailable. Please try again later.
+          </p>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
             <label htmlFor="full_name" className="mb-2 block text-sm font-medium text-slate-700">
-              Full name
+              Full name <span className="text-rose-700" aria-hidden="true">*</span>
             </label>
             <div className="relative">
               <UserRound className="pointer-events-none absolute left-3 top-3.5 h-5 w-5 text-slate-400" />
               <input
                 id="full_name"
                 name="full_name"
+                required
                 value={form.full_name}
                 onChange={handleChange}
                 placeholder="Enter your full name"
+                autoComplete="name"
+                aria-invalid={Boolean(errors.full_name)}
+                aria-describedby={errors.full_name ? "register-name-error" : undefined}
                 className="w-full rounded-xl border border-slate-300 bg-slate-50 py-3 pl-11 pr-3 text-slate-900 placeholder:text-slate-400 focus:border-teal-600 focus:outline-none"
               />
             </div>
-            {errors.full_name && <p className="mt-1 text-sm text-rose-600">{errors.full_name}</p>}
+            {errors.full_name && <p id="register-name-error" className="mt-1 text-sm text-rose-700" role="alert">{errors.full_name}</p>}
           </div>
 
           <div>
             <label htmlFor="email" className="mb-2 block text-sm font-medium text-slate-700">
-              Email address
+              Email address <span className="text-rose-700" aria-hidden="true">*</span>
             </label>
             <div className="relative">
               <Mail className="pointer-events-none absolute left-3 top-3.5 h-5 w-5 text-slate-400" />
@@ -126,13 +156,17 @@ export default function Register() {
                 id="email"
                 name="email"
                 type="email"
+                required
                 value={form.email}
                 onChange={handleChange}
                 placeholder="you@example.com"
+                autoComplete="email"
+                aria-invalid={Boolean(errors.email)}
+                aria-describedby={errors.email ? "register-email-error" : undefined}
                 className="w-full rounded-xl border border-slate-300 bg-slate-50 py-3 pl-11 pr-3 text-slate-900 placeholder:text-slate-400 focus:border-teal-600 focus:outline-none"
               />
             </div>
-            {errors.email && <p className="mt-1 text-sm text-rose-600">{errors.email}</p>}
+            {errors.email && <p id="register-email-error" className="mt-1 text-sm text-rose-700" role="alert">{errors.email}</p>}
           </div>
 
           <div>
@@ -142,9 +176,11 @@ export default function Register() {
             <input
               id="phone"
               name="phone"
+              type="tel"
               value={form.phone}
               onChange={handleChange}
               placeholder="+2519XXXXXXXX"
+              autoComplete="tel"
               className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-3 text-slate-900 placeholder:text-slate-400 focus:border-teal-600 focus:outline-none"
             />
           </div>
@@ -152,7 +188,7 @@ export default function Register() {
           <div className="grid gap-5 md:grid-cols-2">
             <div>
               <label htmlFor="password" className="mb-2 block text-sm font-medium text-slate-700">
-                Password
+                Password <span className="text-rose-700" aria-hidden="true">*</span>
               </label>
               <div className="relative">
                 <LockKeyhole className="pointer-events-none absolute left-3 top-3.5 h-5 w-5 text-slate-400" />
@@ -160,25 +196,28 @@ export default function Register() {
                   id="password"
                   name="password"
                   type={showPassword ? "text" : "password"}
+                  required
                   value={form.password}
                   onChange={handleChange}
+                  autoComplete="new-password"
+                  aria-invalid={Boolean(errors.password)}
+                  aria-describedby={errors.password ? "register-password-error" : undefined}
                   className="w-full rounded-xl border border-slate-300 bg-slate-50 py-3 pl-11 pr-11 text-slate-900 placeholder:text-slate-400 focus:border-teal-600 focus:outline-none"
                 />
-                <button
-                  type="button"
+                <IconButton
                   onClick={() => setShowPassword((value) => !value)}
-                  className="absolute right-3 top-3.5 text-slate-500 hover:text-slate-700"
-                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  label={showPassword ? "Hide password" : "Show password"}
+                  className="absolute right-0 top-1/2 -translate-y-1/2"
                 >
                   {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                </button>
+                </IconButton>
               </div>
-              {errors.password && <p className="mt-1 text-sm text-rose-600">{errors.password}</p>}
+              {errors.password && <p id="register-password-error" className="mt-1 text-sm text-rose-700" role="alert">{errors.password}</p>}
             </div>
 
             <div>
               <label htmlFor="confirmPassword" className="mb-2 block text-sm font-medium text-slate-700">
-                Confirm password
+                Confirm password <span className="text-rose-700" aria-hidden="true">*</span>
               </label>
               <div className="relative">
                 <LockKeyhole className="pointer-events-none absolute left-3 top-3.5 h-5 w-5 text-slate-400" />
@@ -186,44 +225,48 @@ export default function Register() {
                   id="confirmPassword"
                   name="confirmPassword"
                   type={showConfirmPassword ? "text" : "password"}
+                  required
                   value={form.confirmPassword}
                   onChange={handleChange}
+                  autoComplete="new-password"
+                  aria-invalid={Boolean(errors.confirmPassword)}
+                  aria-describedby={errors.confirmPassword ? "register-confirm-password-error" : undefined}
                   className="w-full rounded-xl border border-slate-300 bg-slate-50 py-3 pl-11 pr-11 text-slate-900 placeholder:text-slate-400 focus:border-teal-600 focus:outline-none"
                 />
-                <button
-                  type="button"
+                <IconButton
                   onClick={() => setShowConfirmPassword((value) => !value)}
-                  className="absolute right-3 top-3.5 text-slate-500 hover:text-slate-700"
-                  aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+                  label={showConfirmPassword ? "Hide password" : "Show password"}
+                  className="absolute right-0 top-1/2 -translate-y-1/2"
                 >
                   {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                </button>
+                </IconButton>
               </div>
               {errors.confirmPassword && (
-                <p className="mt-1 text-sm text-rose-600">{errors.confirmPassword}</p>
+                <p id="register-confirm-password-error" className="mt-1 text-sm text-rose-700" role="alert">{errors.confirmPassword}</p>
               )}
             </div>
           </div>
 
           {errors.general && (
-            <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+            <div role="alert" className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
               {errors.general}
             </div>
           )}
 
           {success && (
-            <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+            <div role="status" className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
               {success}
             </div>
           )}
 
-          <button
+          <Button
             type="submit"
-            disabled={loading}
-            className="flex w-full items-center justify-center rounded-xl bg-teal-700 px-4 py-3 font-semibold text-white transition hover:bg-teal-800 disabled:cursor-not-allowed disabled:bg-teal-500"
+            loading={loading}
+            disabled={Boolean(settingsError || !publicSettings || !publicSettings.patient_registration_enabled || publicSettings.maintenance_mode)}
+            className="w-full"
           >
-            {loading ? "Creating account..." : "Create account"}
-          </button>
+            {loading ? "Creating account..." : "Create patient account"}
+          </Button>
         </form>
 
         <p className="mt-6 text-center text-sm text-slate-600">

@@ -9,6 +9,7 @@ The five allowed account roles are checked in `users.role`: `system_admin`, `cli
 ## Files
 
 - `database/schema.sql`: additive DDL, constraints, indexes, and update triggers.
+- `database/migrations/20261030_platform_settings.sql`: initializes persisted platform settings for existing databases; apply before deploying settings controls.
 - `database/seeds.sql`: optional development clinic/service only. It creates no users or credentials.
 - `server/src/config/db.js`: CommonJS `pg.Pool`, loading `server/.env` and using the existing `DATABASE_URL` setting.
 - `server/.env.example`: safe template; copy it to `server/.env` and replace the local password yourself.

@@ -7,6 +7,7 @@ import {
 import EmptyState from "../../components/dashboard/EmptyState";
 import ErrorState from "../../components/dashboard/ErrorState";
 import LoadingState from "../../components/dashboard/LoadingState";
+import { PageHeader, SearchInput, StatusBadge } from "../../components/ui/Primitives";
 import api from "../../services/api";
 import {
   createReceptionAppointment,
@@ -17,10 +18,10 @@ import {
   updateReceptionAppointmentStatus,
 } from "../../services/receptionistService";
 
-const panelClass = "rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6";
-const buttonClass = "inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-teal-700 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 disabled:cursor-not-allowed disabled:opacity-50";
-const secondaryButtonClass = "inline-flex min-h-10 items-center justify-center rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50";
-const inputClass = "mt-1 min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-700/20";
+const panelClass = "ui-card p-5 sm:p-6";
+const buttonClass = "ui-button ui-button-primary";
+const secondaryButtonClass = "ui-button ui-button-secondary min-h-11 px-3";
+const inputClass = "ui-control mt-1 w-full text-sm";
 
 const getTodayInEthiopia = () => new Intl.DateTimeFormat("en-CA", { timeZone: "Africa/Addis_Ababa" }).format(new Date());
 const formatDateTime = (value) => new Intl.DateTimeFormat("en-ET", {
@@ -32,7 +33,7 @@ function AppointmentList({ appointments, onStatusChange, busyId, scheduleOnly = 
     return <EmptyState title="No appointments for this date" description="There are no clinic appointments scheduled for the selected day." />;
   }
   return (
-    <div className="overflow-x-auto">
+    <div className="overflow-x-auto" role="region" aria-label="Appointment list, horizontally scrollable" tabIndex={0}>
       <table className="w-full min-w-[720px] text-left text-sm">
         <thead className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500">
           <tr><th className="px-3 py-3">Time</th><th className="px-3 py-3">Patient</th><th className="px-3 py-3">Doctor / service</th><th className="px-3 py-3">Status</th>{!scheduleOnly && <th className="px-3 py-3">Actions</th>}</tr>
@@ -49,7 +50,7 @@ function AppointmentList({ appointments, onStatusChange, busyId, scheduleOnly = 
                 <td className="whitespace-nowrap px-3 py-4 font-medium text-slate-900">{formatDateTime(appointment.starts_at)}</td>
                 <td className="px-3 py-4"><p className="font-semibold text-slate-900">{appointment.patient_name}</p>{appointment.patient_phone && <p className="mt-1 text-slate-500">{appointment.patient_phone}</p>}</td>
                 <td className="px-3 py-4"><p className="font-medium text-slate-900">{appointment.doctor_name}</p><p className="mt-1 text-slate-500">{appointment.service_name}</p></td>
-                <td className="px-3 py-4"><span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold capitalize text-slate-700">{appointment.status.replace("_", " ")}</span></td>
+                <td className="px-3 py-4"><StatusBadge status={appointment.status} /></td>
                 {!scheduleOnly && <td className="px-3 py-4"><div className="flex flex-wrap gap-2">{actions.map(([status, label]) => <button key={status} type="button" className={secondaryButtonClass} disabled={busyId === appointment.id} onClick={() => onStatusChange(appointment.id, status)}>{label}</button>)}</div></td>}
               </tr>
             );
@@ -181,6 +182,13 @@ function ReceptionClinicWorkspace({ clinic, page }) {
   }, [loadData, attempt]);
 
   const changeStatus = async (appointmentId, status) => {
+    const confirmationText = {
+      rejected: "Reject this appointment request?",
+      cancelled: "Cancel this appointment?",
+      no_show: "Mark this appointment as a no-show?",
+    }[status];
+    if (confirmationText && !window.confirm(confirmationText)) return;
+
     setBusyId(appointmentId);
     setFormError("");
     try {
@@ -237,24 +245,23 @@ function ReceptionClinicWorkspace({ clinic, page }) {
   return (
     <div className="space-y-5">
       <section className={panelClass}>
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <p className="text-sm font-medium text-teal-800">{clinic.name} · {clinic.city}</p>
-            <h2 className="mt-1 text-xl font-bold text-slate-950">{{
+        <p className="mb-2 text-sm font-medium text-teal-800">{clinic.name} · {clinic.city}</p>
+        <PageHeader
+          as="h2"
+          title={{
               dashboard: "Reception overview", appointments: "Appointment management",
               booking: "Book an appointment", patients: "Patient directory",
               "doctors-services": "Doctors and services", "doctor-availability": "Doctor availability",
               services: "Clinic services", "check-in-out": "Check-in & Check-out",
               queue: "Today’s schedule",
-            }[page] || "Reception workspace"}</h2>
-            <p className="mt-1 text-sm text-slate-600">{page === "queue" ? "Scheduled appointments in time order; this is not a check-in queue." : "Clinic data is limited to your active receptionist membership."}</p>
-          </div>
-          {(page === "dashboard" || page === "appointments" || page === "queue") && (
+            }[page] || "Reception workspace"}
+          description={page === "queue" ? "Scheduled appointments in time order; this is not a check-in queue." : "Clinic data is limited to your active receptionist membership."}
+          actions={(page === "dashboard" || page === "appointments" || page === "queue") && (
             <label className="min-w-[180px] text-sm font-semibold text-slate-700">Date
               <input className={inputClass} type="date" value={date} onChange={(event) => setDate(event.target.value)} />
             </label>
           )}
-        </div>
+        />
       </section>
 
       {formError && <p className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800" role="alert">{formError}</p>}
@@ -284,9 +291,7 @@ function ReceptionClinicWorkspace({ clinic, page }) {
           {page === "queue" && <p className="mb-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-950">Check-in and queue position are not tracked by the current system. This page shows the scheduled agenda only.</p>}
           {page === "appointments" && (
             <div className="mb-4 grid gap-3 sm:grid-cols-[1fr_12rem]">
-              <label className="text-sm font-medium text-slate-700">Search patient, doctor, or service
-                <input className={inputClass} value={appointmentSearch} onChange={(event) => setAppointmentSearch(event.target.value)} />
-              </label>
+              <SearchInput label="Search patient, doctor, or service" className="w-full" value={appointmentSearch} onChange={(event) => setAppointmentSearch(event.target.value)} />
               <label className="text-sm font-medium text-slate-700">Status
                 <select className={inputClass} value={appointmentStatus} onChange={(event) => setAppointmentStatus(event.target.value)}>
                   <option value="">All statuses</option>
@@ -301,8 +306,7 @@ function ReceptionClinicWorkspace({ clinic, page }) {
       {!loading && page === "patients" && (
         <section className={panelClass}>
           <form className="mb-4 flex flex-wrap gap-2" onSubmit={(event) => { event.preventDefault(); setSearch(patientSearch.trim()); }}>
-            <label className="sr-only" htmlFor="patient-search">Search patients previously seen at this clinic</label>
-            <input id="patient-search" className={`${inputClass} mt-0 min-w-[220px] flex-1`} value={patientSearch} onChange={(event) => setPatientSearch(event.target.value)} placeholder="Search name, email or phone" />
+            <SearchInput label="Search patients previously seen at this clinic" className="min-w-[220px] flex-1" value={patientSearch} onChange={(event) => setPatientSearch(event.target.value)} placeholder="Search name, email or phone" />
             <button type="submit" className={buttonClass}><Search size={16} aria-hidden="true" />Search</button>
           </form>
           {!patients.length ? <EmptyState title="No matching patients" description="Only patients with an appointment at this clinic appear in this directory." /> : (

@@ -28,6 +28,16 @@ const logAuditEvent = async ({ actor_id, action, entity, entity_id, details = {}
 
 const register = async (req, res) => {
   try {
+    const settingsResult = await pool.query(
+      "SELECT patient_registration_enabled FROM platform_settings WHERE id = 1"
+    );
+    if (!settingsResult.rows[0]?.patient_registration_enabled) {
+      return res.status(403).json({
+        success: false,
+        message: "Patient registration is currently unavailable.",
+      });
+    }
+
     const { full_name, email, phone, password } = req.body;
     const normalizedEmail = String(email || "").trim().toLowerCase();
 
@@ -35,17 +45,10 @@ const register = async (req, res) => {
       ? req.body.role.trim().toLowerCase()
       : "";
 
-    const forbiddenRoles = [
-      "system_admin",
-      "clinic_admin",
-      "doctor",
-      "receptionist",
-    ];
-
-    if (forbiddenRoles.includes(requestedRole)) {
+    if (requestedRole && requestedRole !== "patient") {
       return res.status(400).json({
         success: false,
-        message: "Public registration cannot create privileged accounts.",
+        message: "Public registration is limited to patient accounts.",
       });
     }
 
@@ -299,10 +302,51 @@ const updateProfile = async (req, res) => {
   }
 };
 
+const changePassword = async (req, res) => {
+  try {
+    const { current_password: currentPassword, new_password: newPassword } = req.body;
+    const result = await pool.query(
+      "SELECT password_hash FROM users WHERE id = $1 AND is_active = TRUE",
+      [req.user.id]
+    );
+    if (!result.rowCount) {
+      return res.status(404).json({ success: false, message: "User not found." });
+    }
+
+    if (!(await bcrypt.compare(currentPassword, result.rows[0].password_hash))) {
+      return res.status(400).json({
+        success: false,
+        message: "Current password is incorrect.",
+      });
+    }
+
+    const passwordHash = await bcrypt.hash(newPassword, 12);
+    await pool.query(
+      "UPDATE users SET password_hash = $1, updated_at = now() WHERE id = $2",
+      [passwordHash, req.user.id]
+    );
+    await logAuditEvent({
+      actor_id: req.user.id,
+      action: "user_password_changed",
+      entity: "users",
+      entity_id: req.user.id,
+    });
+
+    return res.json({ success: true, message: "Password changed successfully." });
+  } catch (error) {
+    console.error("Password change error:", error.message);
+    return res.status(500).json({
+      success: false,
+      message: "Unable to change the password.",
+    });
+  }
+};
+
 module.exports = {
   register,
   login,
   getMe,
   logout,
   updateProfile,
+  changePassword,
 };

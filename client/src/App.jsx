@@ -2,6 +2,7 @@ import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import RoleRoute from "./components/auth/RoleRoute";
+import PublicLayout from "./components/public/PublicLayout";
 import Login from "./pages/auth/Login";
 import Register from "./pages/auth/Register";
 import PublicHome from "./pages/public/PublicHome";
@@ -39,6 +40,7 @@ import {
   UnsupportedAdminFeature,
   UserManagementPage,
 } from "./pages/admin/SystemAdminPages";
+import SystemSettingsPage from "./pages/admin/SystemSettingsPage";
 import { PlatformAnalyticsPage } from "./pages/dashboard/SystemAdminDashboard";
 
 export default function App() {
@@ -57,10 +59,12 @@ export default function App() {
           <Route path="/contact" element={<PublicHome initialSection="contact" />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
-          <Route path="/clinics" element={<ClinicDirectory />} />
-          <Route path="/clinic/:id" element={<ClinicDetails />} />
-          <Route path="/doctors" element={<DoctorDirectory />} />
-          <Route path="/doctors/:id" element={<DoctorDetails />} />
+          <Route element={<PublicLayout />}>
+            <Route path="/clinics" element={<ClinicDirectory />} />
+            <Route path="/clinic/:id" element={<ClinicDetails />} />
+            <Route path="/doctors" element={<DoctorDirectory />} />
+            <Route path="/doctors/:id" element={<DoctorDetails />} />
+          </Route>
           <Route element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
             <Route path="/account/profile" element={<AccountProfile />} />
             <Route
@@ -177,7 +181,7 @@ export default function App() {
             />
             <Route
               path="/admin/settings"
-              element={<RoleRoute allowedRoles={["system_admin"]}><UnsupportedAdminFeature title="System Settings" /></RoleRoute>}
+              element={<RoleRoute allowedRoles={["system_admin"]}><SystemSettingsPage /></RoleRoute>}
             />
             <Route
               path="/clinic/:clinicId/doctors"

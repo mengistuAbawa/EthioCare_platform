@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useAuth } from "../../context/useAuth";
 import api from "../../services/api";
 import ErrorState from "../../components/dashboard/ErrorState";
+import { Button, Card, FormField, PageHeader } from "../../components/ui/Primitives";
 
 export default function AccountProfile() {
   const { user, refreshUser } = useAuth();
@@ -10,6 +11,14 @@ export default function AccountProfile() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const [passwordForm, setPasswordForm] = useState({
+    current_password: "",
+    new_password: "",
+    confirm_password: "",
+  });
+  const [passwordSaving, setPasswordSaving] = useState(false);
+  const [passwordError, setPasswordError] = useState("");
+  const [passwordNotice, setPasswordNotice] = useState("");
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -38,74 +47,132 @@ export default function AccountProfile() {
     }
   };
 
+  const handlePasswordSubmit = async (event) => {
+    event.preventDefault();
+    setPasswordError("");
+    setPasswordNotice("");
+    if (passwordForm.new_password.length < 12) {
+      setPasswordError("New password must be at least 12 characters.");
+      return;
+    }
+    if (passwordForm.new_password !== passwordForm.confirm_password) {
+      setPasswordError("New password and confirmation do not match.");
+      return;
+    }
+
+    setPasswordSaving(true);
+    try {
+      await api.patch("/auth/password", passwordForm);
+      setPasswordForm({ current_password: "", new_password: "", confirm_password: "" });
+      setPasswordNotice("Your password was changed.");
+    } catch (saveError) {
+      setPasswordError(saveError.response?.data?.message || "Unable to change your password. Please try again.");
+    } finally {
+      setPasswordSaving(false);
+    }
+  };
+
   return (
-    <section className="mx-auto max-w-2xl rounded-2xl border border-slate-200 bg-white p-5 sm:p-7">
-      <div className="mb-6">
-        <h2 className="text-lg font-bold text-slate-950">Account details</h2>
-        <p className="mt-1 text-sm text-slate-600">
-          Update your contact information. Your account role and email are managed securely.
-        </p>
-      </div>
+    <div className="mx-auto max-w-2xl">
+      <PageHeader
+        title="Account details"
+        description="Update your contact information. Your account role and email are managed securely."
+        className="mb-5"
+      />
+      <Card as="section">
+        {error && <ErrorState message={error} className="mb-5" />}
+        {notice && <p role="status" className="mb-5 rounded-xl border border-success/20 bg-[var(--color-success-surface)] p-4 text-sm text-success">{notice}</p>}
 
-      {error && <ErrorState message={error} className="mb-5" />}
-      {notice && (
-        <p role="status" className="mb-5 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800">
-          {notice}
-        </p>
-      )}
+        <form onSubmit={handleSubmit} className="space-y-5">
+          <FormField id="account-full-name" label="Full name" required>
+            <input
+              minLength={2}
+              maxLength={120}
+              value={fullName}
+              onChange={(event) => setFullName(event.target.value)}
+              autoComplete="name"
+              className="ui-control w-full"
+            />
+          </FormField>
 
-      <form onSubmit={handleSubmit} className="space-y-5">
-        <label className="block">
-          <span className="mb-1.5 block text-sm font-medium text-slate-700">Full name</span>
-          <input
-            required
-            minLength={2}
-            maxLength={120}
-            value={fullName}
-            onChange={(event) => setFullName(event.target.value)}
-            autoComplete="name"
-            className="min-h-11 w-full rounded-xl border border-slate-300 px-3 py-2 text-slate-900 focus:border-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-100"
-          />
-        </label>
+          <FormField id="account-email" label="Email address">
+            <input
+              type="email"
+              value={user?.email || ""}
+              readOnly
+              className="ui-control w-full"
+            />
+          </FormField>
 
-        <label className="block">
-          <span className="mb-1.5 block text-sm font-medium text-slate-700">Email address</span>
-          <input
-            type="email"
-            value={user?.email || ""}
-            readOnly
-            className="min-h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-slate-600 focus:outline-none focus:ring-2 focus:ring-teal-100"
-          />
-        </label>
+          <FormField id="account-phone" label="Phone number">
+            <input
+              type="tel"
+              minLength={7}
+              maxLength={30}
+              value={phone}
+              onChange={(event) => setPhone(event.target.value)}
+              autoComplete="tel"
+              className="ui-control w-full"
+            />
+          </FormField>
 
-        <label className="block">
-          <span className="mb-1.5 block text-sm font-medium text-slate-700">Phone number</span>
-          <input
-            type="tel"
-            minLength={7}
-            maxLength={30}
-            value={phone}
-            onChange={(event) => setPhone(event.target.value)}
-            autoComplete="tel"
-            className="min-h-11 w-full rounded-xl border border-slate-300 px-3 py-2 text-slate-900 focus:border-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-100"
-          />
-        </label>
+          <div className="rounded-xl bg-surface-subtle p-4">
+            <p className="text-sm font-medium text-slate-700">Account role</p>
+            <p className="mt-1 text-sm capitalize text-slate-600">
+              {user?.role?.replaceAll("_", " ") || "Unavailable"}
+            </p>
+          </div>
 
-        <div className="rounded-xl bg-slate-50 p-4">
-          <p className="text-sm font-medium text-slate-700">Account role</p>
-          <p className="mt-1 text-sm capitalize text-slate-600">
-            {user?.role?.replaceAll("_", " ") || "Unavailable"}
-          </p>
-        </div>
-
-        <button
-          type="submit"
-          disabled={saving}
-          className="min-h-11 rounded-xl bg-teal-700 px-5 py-2.5 text-sm font-semibold text-white hover:bg-teal-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {saving ? "Saving..." : "Save changes"}
-        </button>
-      </form>
-    </section>
+          <Button type="submit" loading={saving}>
+            {saving ? "Saving..." : "Save changes"}
+          </Button>
+        </form>
+      </Card>
+      <Card as="section" className="mt-5">
+        <h2 className="text-lg font-semibold text-slate-950">Change password</h2>
+        <p className="mt-1 text-sm text-slate-600">Confirm your current password and choose a new password with at least 12 characters.</p>
+        {passwordError && <ErrorState message={passwordError} className="mt-4" />}
+        {passwordNotice && <p role="status" className="mt-4 rounded-xl border border-success/20 bg-[var(--color-success-surface)] p-4 text-sm text-success">{passwordNotice}</p>}
+        <form onSubmit={handlePasswordSubmit} className="mt-5 space-y-4">
+          <FormField id="current-password" label="Current password" required>
+            <input
+              type="password"
+              autoComplete="current-password"
+              required
+              value={passwordForm.current_password}
+              onChange={(event) => setPasswordForm((form) => ({ ...form, current_password: event.target.value }))}
+              className="ui-control w-full"
+            />
+          </FormField>
+          <FormField id="new-password" label="New password" required>
+            <input
+              type="password"
+              autoComplete="new-password"
+              minLength={12}
+              maxLength={128}
+              required
+              value={passwordForm.new_password}
+              onChange={(event) => setPasswordForm((form) => ({ ...form, new_password: event.target.value }))}
+              className="ui-control w-full"
+            />
+          </FormField>
+          <FormField id="confirm-password" label="Confirm new password" required>
+            <input
+              type="password"
+              autoComplete="new-password"
+              minLength={12}
+              maxLength={128}
+              required
+              value={passwordForm.confirm_password}
+              onChange={(event) => setPasswordForm((form) => ({ ...form, confirm_password: event.target.value }))}
+              className="ui-control w-full"
+            />
+          </FormField>
+          <Button type="submit" loading={passwordSaving}>
+            {passwordSaving ? "Changing password..." : "Change password"}
+          </Button>
+        </form>
+      </Card>
+    </div>
   );
 }

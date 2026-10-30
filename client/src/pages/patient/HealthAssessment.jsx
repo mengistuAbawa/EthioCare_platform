@@ -13,6 +13,7 @@ import LabResultForm from "../../components/assessment/LabResultForm";
 import MedicalFileUploader from "../../components/assessment/MedicalFileUploader";
 import OcrVerificationPanel from "../../components/assessment/OcrVerificationPanel";
 import SymptomForm from "../../components/assessment/SymptomForm";
+import { Button, PageHeader } from "../../components/ui/Primitives";
 
 const fileKey = (file) => `${file.name}:${file.size}:${file.lastModified}`;
 const emergencyAnswerKeys = [
@@ -222,16 +223,11 @@ export default function HealthAssessment() {
   return (
     <div>
       <div className="mx-auto max-w-4xl space-y-5">
-        <header className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <p className="text-sm font-semibold uppercase tracking-wide text-teal-800">Patient</p>
-            <h2 className="text-3xl font-bold text-slate-900">{assessmentId ? "Edit assessment draft" : "Health assessment"}</h2>
-            <p className="mt-1 text-slate-600">Share information with the doctor you select.</p>
-          </div>
-          <Link to="/patient/assessments" className="font-semibold text-teal-800 hover:underline">
-            View assessment history
-          </Link>
-        </header>
+        <PageHeader
+          title={assessmentId ? "Edit assessment draft" : "Health assessment"}
+          description="Share information with the doctor you select."
+          actions={<Link to="/patient/assessments" className="ui-button ui-button-secondary">View assessment history</Link>}
+        />
 
         <div className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950">
           This form is not for emergencies and does not provide a diagnosis. If you may be having a medical emergency, contact local emergency services or seek urgent care.
@@ -328,31 +324,30 @@ export default function HealthAssessment() {
           <div className="flex flex-wrap justify-between gap-3">
             <div className="flex gap-3">
               {step > 1 && (
-                <button type="button" onClick={() => setStep((current) => current - 1)} className="rounded-xl border border-slate-300 px-5 py-3 font-semibold text-slate-700">
+                <Button type="button" variant="secondary" disabled={submitting} onClick={() => setStep((current) => current - 1)}>
                   Back
-                </button>
+                </Button>
               )}
-              <button
+              <Button
                 type="button"
-                disabled={submitting || loadingDoctors}
+                loading={submitting}
+                disabled={loadingDoctors}
                 onClick={handleSaveDraft}
-                className="rounded-xl border border-teal-700 px-5 py-3 font-semibold text-teal-800 disabled:opacity-50"
               >
                 {submitting ? "Saving…" : "Save draft"}
-              </button>
+              </Button>
             </div>
             {step < steps.length ? (
-              <button
+              <Button
                 type="submit"
-                disabled={loadingDoctors || doctors.length === 0}
-                className="rounded-xl bg-teal-700 px-5 py-3 font-semibold text-white hover:bg-teal-800 disabled:cursor-not-allowed disabled:opacity-50"
+                disabled={loadingDoctors || doctors.length === 0 || submitting}
               >
                 Continue
-              </button>
+              </Button>
             ) : (
-              <button type="submit" disabled={submitting} className="rounded-xl bg-teal-700 px-5 py-3 font-semibold text-white hover:bg-teal-800 disabled:opacity-50">
+              <Button type="submit" loading={submitting}>
                 {submitting ? "Saving and submitting..." : "Submit to doctor"}
-              </button>
+              </Button>
             )}
           </div>
         </form>

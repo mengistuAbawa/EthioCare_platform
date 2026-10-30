@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
 import { ArrowRight, MapPin, Search, Stethoscope } from "lucide-react";
 import { Link } from "react-router-dom";
+import EmptyState from "../../components/dashboard/EmptyState";
+import ErrorState from "../../components/dashboard/ErrorState";
+import { Button, PageHeader, SearchInput, StatusBadge } from "../../components/ui/Primitives";
 import { getPublicDoctors } from "../../services/doctorService";
 
 const initialFilters = { search: "", specialty: "", clinic: "", city: "" };
@@ -54,28 +57,25 @@ export default function DoctorDirectory({ portal = false }) {
   const Wrapper = portal ? "div" : "main";
 
   return (
-    <Wrapper className={portal ? "space-y-6" : "min-h-screen bg-slate-50 px-4 py-10 sm:px-6"}>
+    <Wrapper className={portal ? "space-y-6" : "flex-1 bg-page px-4 py-10 sm:px-6"}>
       <div className="mx-auto max-w-7xl">
-        <header className="mb-8">
-          <p className="text-sm font-semibold uppercase tracking-[0.18em] text-teal-700">{portal ? "Patient Portal" : "EthioCare directory"}</p>
-          <h1 className="mt-2 text-3xl font-bold text-slate-950 sm:text-4xl">Find a doctor</h1>
-          <p className="mt-3 max-w-2xl text-slate-600">
-            Explore approved doctor profiles at verified clinics.
-          </p>
-        </header>
+        <PageHeader
+          as={portal ? "h2" : "h1"}
+          title="Find a doctor"
+          description="Explore approved doctor profiles at verified clinics."
+          className="mb-8"
+        />
 
         <form
           onSubmit={submitSearch}
-          className="mb-8 grid gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1fr_auto]"
+          className="ui-card mb-8 grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1fr_auto]"
         >
-          <label className="sr-only" htmlFor="doctor-search">Doctor name or specialty</label>
-          <input
-            id="doctor-search"
+          <SearchInput
+            label="Doctor name or specialty"
             name="search"
             value={filters.search}
             onChange={changeFilter}
             placeholder="Doctor name or specialty"
-            className="min-w-0 rounded-xl border border-slate-300 px-3 py-2.5"
           />
           <label className="sr-only" htmlFor="doctor-specialty">Specialty</label>
           <input
@@ -104,12 +104,9 @@ export default function DoctorDirectory({ portal = false }) {
             placeholder="City"
             className="min-w-0 rounded-xl border border-slate-300 px-3 py-2.5"
           />
-          <button
-            type="submit"
-            className="inline-flex items-center justify-center gap-2 rounded-xl bg-teal-700 px-5 py-2.5 font-semibold text-white hover:bg-teal-800"
-          >
+          <Button type="submit">
             <Search size={17} /> Search
-          </button>
+          </Button>
         </form>
 
         <div className="mb-4 flex items-center justify-between">
@@ -119,12 +116,7 @@ export default function DoctorDirectory({ portal = false }) {
         </div>
 
         {error ? (
-          <div className="rounded-2xl border border-rose-200 bg-rose-50 p-5 text-rose-800" role="alert">
-            <p className="font-semibold">{error}</p>
-            <button type="button" onClick={() => { setLoading(true); setRetryKey((current) => current + 1); }} className="mt-3 font-semibold underline">
-              Retry
-            </button>
-          </div>
+          <ErrorState message={error} onRetry={() => { setLoading(true); setRetryKey((current) => current + 1); }} />
         ) : loading ? (
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3" aria-label="Loading doctor profiles">
             {Array.from({ length: 6 }, (_, index) => (
@@ -140,7 +132,7 @@ export default function DoctorDirectory({ portal = false }) {
           <>
             <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
               {doctors.map((doctor) => (
-                <article key={doctor.id} className="flex flex-col rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                <article key={doctor.id} className="ui-card flex flex-col p-5">
                   <div className="flex items-start gap-4">
                     <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-teal-50 text-teal-700">
                       <Stethoscope size={22} />
@@ -162,9 +154,7 @@ export default function DoctorDirectory({ portal = false }) {
                       <span className="block text-sm font-semibold text-slate-700">
                         {doctor.consultation_fee > 0 ? `${doctor.consultation_fee} ETB` : "Fee not listed"}
                       </span>
-                      <span className={`mt-1 block text-xs font-medium ${doctor.is_available ? "text-emerald-700" : "text-slate-500"}`}>
-                        {doctor.is_available ? "Currently available" : "Currently unavailable"}
-                      </span>
+                      <span className="mt-1 block"><StatusBadge status={doctor.is_available ? "available" : "unavailable"} label={doctor.is_available ? "Currently available" : "Currently unavailable"} /></span>
                     </span>
                     <Link
                       to={portal ? `/patient/doctors/${doctor.id}` : `/doctors/${doctor.id}`}
@@ -178,32 +168,31 @@ export default function DoctorDirectory({ portal = false }) {
             </div>
             {pagination.pages > 1 ? (
               <nav className="mt-8 flex items-center justify-center gap-4" aria-label="Doctor directory pages">
-                <button
+                <Button
                   type="button"
+                  variant="secondary"
                   disabled={page <= 1}
                   onClick={() => { setLoading(true); setPage((current) => current - 1); }}
-                  className="rounded-lg border border-slate-300 bg-white px-4 py-2 font-medium disabled:opacity-40"
                 >
                   Previous
-                </button>
+                </Button>
                 <span className="text-sm text-slate-600">Page {page} of {pagination.pages}</span>
-                <button
+                <Button
                   type="button"
+                  variant="secondary"
                   disabled={page >= pagination.pages}
                   onClick={() => { setLoading(true); setPage((current) => current + 1); }}
-                  className="rounded-lg border border-slate-300 bg-white px-4 py-2 font-medium disabled:opacity-40"
                 >
                   Next
-                </button>
+                </Button>
               </nav>
             ) : null}
           </>
         ) : (
-          <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center">
-            <Stethoscope className="mx-auto text-slate-400" size={30} />
-            <h2 className="mt-3 font-semibold text-slate-900">No matching doctors</h2>
-            <p className="mt-1 text-sm text-slate-600">Try another name, specialty, clinic, or city.</p>
-          </div>
+          <EmptyState
+            title="No matching doctors"
+            description="Try another name, specialty, clinic, or city."
+          />
         )}
       </div>
     </Wrapper>

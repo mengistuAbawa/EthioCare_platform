@@ -9,7 +9,7 @@ export default function SidebarItem({ item, collapsed = false, onNavigate, onLog
       selected
         ? "bg-teal-50 text-teal-800 ring-1 ring-inset ring-teal-100"
         : "text-slate-600 hover:bg-slate-100 hover:text-slate-950"
-    } focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 ${
+    } ${
       collapsed ? "justify-center px-2" : ""
     }`;
   const content = (

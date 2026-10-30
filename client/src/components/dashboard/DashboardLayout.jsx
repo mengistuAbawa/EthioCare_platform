@@ -93,9 +93,12 @@ export default function DashboardLayout() {
   }, [location.hash, location.pathname]);
 
   return (
-    <div className="min-h-screen bg-slate-50 lg:flex">
+    <div className="min-h-screen bg-page lg:flex">
+      <a href="#main-content" className="ui-skip-link">
+        Skip to main content
+      </a>
       <aside
-        className={`hidden shrink-0 border-r border-slate-200 bg-white transition-[width] motion-reduce:transition-none lg:flex ${
+        className={`hidden shrink-0 border-r border-border bg-surface transition-[width] motion-reduce:transition-none lg:flex ${
           collapsed ? "w-[76px]" : "w-72"
         }`}
       >
@@ -123,7 +126,7 @@ export default function DashboardLayout() {
           onLogout={logout}
           onMobileMenuOpen={() => setMobileOpen(true)}
         />
-        <main className="px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+        <main id="main-content" tabIndex="-1" className="app-content px-4 py-5 sm:px-6 sm:py-7 lg:px-8 lg:py-8">
           <PageContainer>
             <Outlet />
           </PageContainer>

@@ -1,8 +1,8 @@
-export default function ErrorState({ title = "Something went wrong", message, onRetry, className = "" }) {
+export default function ErrorState({ title = "Something went wrong", message, onRetry, action, className = "" }) {
   return (
     <section
       role="alert"
-      className={`rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800 ${className}`}
+      className={`rounded-card border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800 ${className}`}
     >
       <h2 className="font-semibold">{title}</h2>
       {message && <p className="mt-1 leading-5">{message}</p>}
@@ -15,6 +15,7 @@ export default function ErrorState({ title = "Something went wrong", message, on
           Try again
         </button>
       )}
+      {action && <div className="mt-3">{action}</div>}
     </section>
   );
 }

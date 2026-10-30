@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
 import { ArrowLeft, Building2, MapPin, ShieldCheck } from "lucide-react";
 import { Link, useParams } from "react-router-dom";
+import ErrorState from "../../components/dashboard/ErrorState";
+import LoadingState from "../../components/dashboard/LoadingState";
+import { Card, StatusBadge } from "../../components/ui/Primitives";
 import api from "../../services/api";
 
 export default function ClinicDetails({ portal = false }) {
@@ -32,34 +35,33 @@ export default function ClinicDetails({ portal = false }) {
 
   if (loading) {
     return (
-      <Wrapper className={portal ? "p-6 text-slate-600" : "flex min-h-screen items-center justify-center bg-slate-100 text-slate-600"}>
-        Loading clinic details...
+      <Wrapper className={portal ? "p-6" : "flex min-h-48 flex-1 items-center justify-center bg-page px-4 py-8"}>
+        <LoadingState label="Loading clinic details..." />
       </Wrapper>
     );
   }
 
   if (error || !clinic) {
     return (
-      <Wrapper className={portal ? "p-6" : "min-h-screen bg-slate-100 p-6"}>
-        <div className="mx-auto max-w-3xl rounded-2xl border border-rose-200 bg-rose-50 p-6 text-rose-700 shadow-sm">
-          <p className="font-semibold">Clinic not found</p>
-          <p className="mt-2">{error || "This clinic is not available for public viewing."}</p>
-          <Link to={directoryPath} className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-rose-700">
-            <ArrowLeft size={16} /> Back to clinics
-          </Link>
+      <Wrapper className={portal ? "p-6" : "flex-1 bg-page p-6"}>
+        <div className="mx-auto max-w-3xl">
+          <ErrorState
+            message={error || "This clinic is not available for public viewing."}
+            action={<Link to={directoryPath} className="ui-button ui-button-secondary"><ArrowLeft size={16} /> Back to clinics</Link>}
+          />
         </div>
       </Wrapper>
     );
   }
 
   return (
-    <Wrapper className={portal ? "px-1 py-2" : "min-h-screen bg-slate-100 px-4 py-12"}>
+    <Wrapper className={portal ? "px-1 py-2" : "flex-1 bg-page px-4 py-12"}>
       <div className="mx-auto max-w-5xl">
-        <Link to={directoryPath} className="mb-6 inline-flex items-center gap-2 text-sm font-semibold text-slate-700">
+        <Link to={directoryPath} className="mb-6 inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-text-secondary hover:text-brand-navy">
           <ArrowLeft size={16} /> Back to clinics
         </Link>
 
-        <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm md:p-8">
+        <Card as="article" className="md:p-8">
           <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
             <div className="flex items-start gap-4">
               <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-teal-100 text-teal-700">
@@ -77,9 +79,7 @@ export default function ClinicDetails({ portal = false }) {
               </div>
             </div>
 
-            <span className="inline-flex items-center gap-2 rounded-full bg-emerald-100 px-3 py-1.5 text-sm font-semibold text-emerald-700">
-              <ShieldCheck size={16} /> Verified
-            </span>
+            <StatusBadge status="verified" label={<><ShieldCheck size={16} aria-hidden="true" /> Verified</>} />
           </div>
 
           <div className="mt-8 grid gap-6 lg:grid-cols-[1.3fr_0.7fr]">
@@ -114,7 +114,7 @@ export default function ClinicDetails({ portal = false }) {
               </div>
             </aside>
           </div>
-        </div>
+        </Card>
       </div>
     </Wrapper>
   );

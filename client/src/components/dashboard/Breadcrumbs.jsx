@@ -6,7 +6,7 @@ export default function Breadcrumbs({ items }) {
 
   return (
     <nav aria-label="Breadcrumb" className="mt-1">
-      <ol className="flex flex-wrap items-center gap-1 text-xs text-slate-500">
+      <ol className="flex flex-wrap items-center gap-1 text-xs text-text-secondary">
         {items.map((item, index) => {
           const current = index === items.length - 1;
           return (
@@ -17,7 +17,7 @@ export default function Breadcrumbs({ items }) {
                   {item.label}
                 </Link>
               ) : (
-                <span aria-current={current ? "page" : undefined} className={current ? "font-medium text-slate-700" : ""}>
+                <span aria-current={current ? "page" : undefined} className={current ? "font-medium text-text-primary" : ""}>
                   {item.label}
                 </span>
               )}

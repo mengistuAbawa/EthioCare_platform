@@ -1,5 +1,9 @@
 import { useEffect, useState } from "react";
 import { MapPin, Save, Stethoscope } from "lucide-react";
+import EmptyState from "../../components/dashboard/EmptyState";
+import ErrorState from "../../components/dashboard/ErrorState";
+import LoadingState from "../../components/dashboard/LoadingState";
+import { Button, Card, FormField, PageHeader, StatusBadge } from "../../components/ui/Primitives";
 import { getMyDoctorProfile, updateMyDoctorProfile } from "../../services/doctorService";
 
 export default function MyDoctorProfile() {
@@ -75,20 +79,17 @@ export default function MyDoctorProfile() {
   };
 
   if (loading) {
-    return <p className="text-slate-600" role="status">Loading your profile...</p>;
+    return <LoadingState label="Loading your professional profile..." />;
   }
 
   return (
     <div className="mx-auto max-w-3xl">
-        <header className="mb-6">
-          <p className="text-sm font-semibold uppercase tracking-wider text-teal-700">Doctor workspace</p>
-          <h2 className="mt-2 text-3xl font-bold text-slate-950">My professional profile</h2>
-        </header>
-        {error ? <p className="mb-4 rounded-xl border border-rose-200 bg-rose-50 p-4 text-rose-800" role="alert">{error}</p> : null}
+        <PageHeader title="My professional profile" className="mb-6" />
+        {error ? <ErrorState message={error} className="mb-4" /> : null}
         {notice ? <p className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-emerald-800" role="status">{notice}</p> : null}
         {profile ? (
           <>
-            <section className="mb-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <Card as="section" className="mb-6">
               <div className="flex items-start gap-4">
                 <div className="rounded-xl bg-teal-50 p-3 text-teal-800"><Stethoscope size={24} /></div>
                 <div>
@@ -99,9 +100,9 @@ export default function MyDoctorProfile() {
                   <p className="mt-2 text-sm text-slate-600">
                     License number: {profile.license_number} · Consultation fee: {profile.consultation_fee} ETB
                   </p>
-                  <p className={`mt-2 text-sm font-medium ${profile.is_profile_approved ? "text-emerald-700" : "text-amber-800"}`}>
-                    {profile.is_profile_approved ? "Public profile approved" : "Profile details require clinic review"}
-                  </p>
+                  <div className="mt-2">
+                    <StatusBadge status={profile.is_profile_approved ? "approved" : "pending"} label={profile.is_profile_approved ? "Public profile approved" : "Profile details require clinic review"} />
+                  </div>
                   <div className="mt-4">
                     <h3 className="text-sm font-semibold text-slate-800">Assigned clinic services</h3>
                     {profile.services?.length ? (
@@ -116,51 +117,41 @@ export default function MyDoctorProfile() {
                   </div>
                 </div>
               </div>
-            </section>
-            <form onSubmit={submit} className="space-y-5 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-              <label className="block text-sm font-semibold text-slate-700">
-                Specialty
+            </Card>
+            <Card as="form" onSubmit={submit} className="space-y-5">
+              <FormField id="doctor-specialty" label="Specialty" required>
                 <input
-                  required
                   minLength="2"
                   maxLength="120"
                   value={form.specialty}
                   onChange={(event) => setForm((current) => ({ ...current, specialty: event.target.value }))}
-                  className="mt-1.5 w-full rounded-xl border border-slate-300 px-3 py-2.5 font-normal"
+                  className="ui-control w-full"
                 />
-              </label>
-              <label className="block text-sm font-semibold text-slate-700">
-                Qualifications
+              </FormField>
+              <FormField id="doctor-qualifications" label="Qualifications">
                 <textarea
                   rows="4"
                   maxLength="2000"
                   value={form.qualifications}
                   onChange={(event) => setForm((current) => ({ ...current, qualifications: event.target.value }))}
-                  className="mt-1.5 w-full rounded-xl border border-slate-300 px-3 py-2.5 font-normal"
+                  className="ui-control w-full"
                 />
-              </label>
-              <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
-                <input
-                  type="checkbox"
-                  checked={form.is_available}
-                  onChange={(event) => setForm((current) => ({ ...current, is_available: event.target.checked }))}
-                />
+              </FormField>
+              <label className="flex min-h-11 items-center gap-2 text-sm font-medium text-text-primary">
+                <input type="checkbox" checked={form.is_available} onChange={(event) => setForm((current) => ({ ...current, is_available: event.target.checked }))} />
                 Available to patients
               </label>
-              <button
-                type="submit"
-                disabled={saving}
-                className="inline-flex items-center gap-2 rounded-xl bg-teal-700 px-5 py-2.5 font-semibold text-white hover:bg-teal-800 disabled:opacity-50"
-              >
+              <Button type="submit" loading={saving}>
                 <Save size={17} /> {saving ? "Saving..." : "Save profile"}
-              </button>
-            </form>
+              </Button>
+            </Card>
           </>
         ) : (
-          <section className="rounded-2xl border border-amber-200 bg-amber-50 p-6 text-amber-900" role="status">
-            Your account does not yet have a clinic doctor profile. Contact your clinic administrator to link your existing account.
-            <button type="button" onClick={() => { setLoading(true); load(); }} className="ml-2 font-semibold underline">Retry</button>
-          </section>
+          <EmptyState
+            title="No clinic doctor profile"
+            description="Your account is not linked to a clinic doctor profile yet. Contact your clinic administrator to link your existing account."
+            action={<Button onClick={() => { setLoading(true); load(); }}>Retry</Button>}
+          />
         )}
     </div>
   );

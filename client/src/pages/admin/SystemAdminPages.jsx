@@ -7,6 +7,7 @@ import {
   getAdminClinics,
   getAdminNotifications,
   getAdminUsers,
+  createAdminManagedUser,
   markAdminNotificationRead,
   reviewAdminClinic,
   updateAdminClinic,
@@ -15,25 +16,18 @@ import {
 import EmptyState from "../../components/dashboard/EmptyState";
 import ErrorState from "../../components/dashboard/ErrorState";
 import LoadingState from "../../components/dashboard/LoadingState";
+import { Button, PageHeader, StatusBadge as UiStatusBadge } from "../../components/ui/Primitives";
 
-const panelClass = "rounded-2xl border border-slate-200 bg-white p-5 sm:p-6";
-const inputClass = "min-h-11 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-100";
-const buttonClass = "inline-flex min-h-10 items-center justify-center rounded-xl bg-teal-700 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 disabled:cursor-not-allowed disabled:opacity-60";
+const panelClass = "ui-card p-5 sm:p-6";
+const inputClass = "ui-control w-full text-sm";
+const buttonClass = "ui-button ui-button-primary";
 
 const formatDate = (value) => value ? new Date(value).toLocaleString() : "—";
 const humanize = (value) => String(value || "").replaceAll("_", " ");
 const messageFrom = (error, fallback) => error.response?.data?.message || fallback;
 
 function PageTitle({ title, description, children }) {
-  return (
-    <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-      <div>
-        <h2 className="text-xl font-bold text-slate-950">{title}</h2>
-        {description && <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">{description}</p>}
-      </div>
-      {children}
-    </div>
-  );
+  return <PageHeader title={title} description={description} actions={children} className="mb-6" />;
 }
 
 function AdminPagination({ pagination, onPageChange }) {
@@ -56,14 +50,14 @@ function AdminPagination({ pagination, onPageChange }) {
 }
 
 function StatusBadge({ children, tone = "slate" }) {
-  const tones = {
-    slate: "bg-slate-100 text-slate-700",
-    green: "bg-emerald-50 text-emerald-800",
-    amber: "bg-amber-50 text-amber-800",
-    red: "bg-rose-50 text-rose-800",
-    blue: "bg-sky-50 text-sky-800",
+  const statusByTone = {
+    slate: "unknown",
+    green: "verified",
+    amber: "pending",
+    red: "rejected",
+    blue: "not_configured",
   };
-  return <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold capitalize ${tones[tone]}`}>{humanize(children)}</span>;
+  return <UiStatusBadge status={statusByTone[tone] || "unknown"} label={humanize(children)} />;
 }
 
 const statusTone = (value) => value === "verified" || value === "active" || value === "completed" ? "green"
@@ -142,7 +136,7 @@ export function ClinicManagementPage({ view = "all" }) {
       {loading ? <LoadingState label="Loading clinics..." /> : clinics.length === 0 ? (
         <EmptyState title="No clinics found" description="No clinic records match the selected search and filters." />
       ) : (
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto" role="region" aria-label="Clinic results, horizontally scrollable table" tabIndex={0}>
           <table className="w-full min-w-[760px] text-left text-sm">
             <thead className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500">
               <tr><th className="px-3 py-3">Clinic</th><th className="px-3 py-3">Location</th><th className="px-3 py-3">Verification</th><th className="px-3 py-3">Operating status</th><th className="px-3 py-3">Registered</th><th className="px-3 py-3">Action</th></tr>
@@ -393,6 +387,19 @@ export function UserManagementPage({ mode = "all" }) {
   const [error, setError] = useState("");
   const [reload, setReload] = useState(0);
   const isStaff = mode === "staff";
+  const [createForm, setCreateForm] = useState({
+    full_name: "",
+    email: "",
+    phone: "",
+    password: "",
+    role: "clinic_admin",
+    clinic_id: "",
+  });
+  const [clinics, setClinics] = useState([]);
+  const [clinicsLoading, setClinicsLoading] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [createError, setCreateError] = useState("");
+  const [createNotice, setCreateNotice] = useState("");
 
   const load = useCallback(async () => {
     try {
@@ -413,12 +420,171 @@ export function UserManagementPage({ mode = "all" }) {
   }, [fixedRole, isStaff, page, role, search, status]);
   useEffect(() => { void Promise.resolve().then(load); }, [load, location.pathname, reload]);
 
+  const loadClinics = useCallback(async () => {
+    setClinicsLoading(true);
+    try {
+      const response = await getAdminClinics({ page: 1, limit: 100 });
+      setClinics(response.data?.data?.clinics || []);
+    } catch (requestError) {
+      setCreateError(messageFrom(requestError, "Unable to load clinics for the administrator account."));
+    } finally {
+      setClinicsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!["clinic_admin", "receptionist"].includes(createForm.role) || mode !== "all") return;
+    void Promise.resolve().then(loadClinics);
+  }, [createForm.role, loadClinics, mode]);
+
+  const submitCreate = async (event) => {
+    event.preventDefault();
+    setCreating(true);
+    setCreateError("");
+    setCreateNotice("");
+
+    try {
+      const payload = {
+        full_name: createForm.full_name.trim(),
+        email: createForm.email.trim(),
+        phone: createForm.phone.trim() || undefined,
+        password: createForm.password,
+        role: createForm.role,
+      };
+      if (["clinic_admin", "receptionist"].includes(createForm.role)) {
+        payload.clinic_id = Number(createForm.clinic_id);
+      }
+      const response = await createAdminManagedUser(payload);
+      setCreateNotice(response.data?.message || "Account created.");
+      setCreateForm({
+        full_name: "",
+        email: "",
+        phone: "",
+        password: "",
+        role: "clinic_admin",
+        clinic_id: "",
+      });
+      setReload((current) => current + 1);
+    } catch (requestError) {
+      setCreateError(messageFrom(requestError, "Unable to create the account."));
+    } finally {
+      setCreating(false);
+    }
+  };
+
   return (
     <section className={panelClass}>
       <PageTitle
         title={mode === "doctor" ? "Doctor Management" : isStaff ? "Security & Access Control" : "User Management"}
-        description="Read-only account directory. Privileged role changes and account disabling are not exposed because the existing backend has no audited workflow for those actions."
+        description="Review platform accounts and provision clinic administrator, receptionist, and doctor accounts. Existing accounts cannot have their role changed here."
       />
+      {mode === "all" && (
+        <form onSubmit={submitCreate} className="mb-6 rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:p-5">
+          <h3 className="text-base font-semibold text-slate-950">Create a clinic account</h3>
+          <p className="mt-1 text-sm text-slate-600">
+            Set an initial password of at least 12 characters and share it with the account holder through a secure channel. They can change it from Account Details.
+          </p>
+          {createError && <p role="alert" className="mt-3 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800">{createError}</p>}
+          {createNotice && <p role="status" className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">{createNotice}</p>}
+          <div className="mt-4 grid gap-3 md:grid-cols-2">
+            <label className="text-sm font-medium text-slate-700">
+              Account type
+              <select
+                className={`${inputClass} mt-1`}
+                value={createForm.role}
+                onChange={(event) => setCreateForm((form) => ({ ...form, role: event.target.value, clinic_id: "" }))}
+              >
+                <option value="clinic_admin">Clinic administrator</option>
+                <option value="receptionist">Receptionist</option>
+                <option value="doctor">Doctor</option>
+              </select>
+            </label>
+            <label className="text-sm font-medium text-slate-700">
+              Full name
+              <input
+                required
+                minLength={2}
+                maxLength={120}
+                className={`${inputClass} mt-1`}
+                value={createForm.full_name}
+                onChange={(event) => setCreateForm((form) => ({ ...form, full_name: event.target.value }))}
+              />
+            </label>
+            <label className="text-sm font-medium text-slate-700">
+              Email
+              <input
+                required
+                type="email"
+                maxLength={254}
+                className={`${inputClass} mt-1`}
+                value={createForm.email}
+                onChange={(event) => setCreateForm((form) => ({ ...form, email: event.target.value }))}
+              />
+            </label>
+            <label className="text-sm font-medium text-slate-700">
+              Phone (optional)
+              <input
+                type="tel"
+                minLength={7}
+                maxLength={30}
+                className={`${inputClass} mt-1`}
+                value={createForm.phone}
+                onChange={(event) => setCreateForm((form) => ({ ...form, phone: event.target.value }))}
+              />
+            </label>
+            {["clinic_admin", "receptionist"].includes(createForm.role) && (
+              <label className="text-sm font-medium text-slate-700">
+                Clinic assignment
+                <select
+                  required
+                  className={`${inputClass} mt-1`}
+                  value={createForm.clinic_id}
+                  onChange={(event) => setCreateForm((form) => ({ ...form, clinic_id: event.target.value }))}
+                  disabled={clinicsLoading}
+                >
+                  <option value="">{clinicsLoading ? "Loading clinics..." : "Select a clinic"}</option>
+                  {clinics.map((clinic) => (
+                    <option key={clinic.id} value={clinic.id}>
+                      {clinic.name} · {humanize(clinic.verification_status)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
+            <label className="text-sm font-medium text-slate-700">
+              Initial password (12+ characters)
+              <input
+                required
+                type="password"
+                minLength={12}
+                maxLength={128}
+                autoComplete="new-password"
+                className={`${inputClass} mt-1`}
+                value={createForm.password}
+                onChange={(event) => setCreateForm((form) => ({ ...form, password: event.target.value }))}
+              />
+            </label>
+          </div>
+          {createForm.role === "doctor" && (
+            <p className="mt-3 text-sm text-slate-600">
+              This creates the doctor login account. A clinic administrator must then assign it to a verified clinic and create the doctor profile.
+            </p>
+          )}
+          {["clinic_admin", "receptionist"].includes(createForm.role) && clinics.length === 0 && !clinicsLoading && (
+            <p className="mt-3 text-sm text-amber-800">
+              Create a clinic record before provisioning a clinic administrator or receptionist.
+            </p>
+          )}
+          <Button
+            type="submit"
+            loading={creating}
+            disabled={clinicsLoading || (["clinic_admin", "receptionist"].includes(createForm.role) && clinics.length === 0)}
+            className="mt-4"
+          >
+            {creating ? "Creating account..." : "Create account"}
+          </Button>
+        </form>
+      )}
       <form className="mb-5 grid gap-3 md:grid-cols-[minmax(12rem,1fr)_12rem_12rem_auto]" onSubmit={(event) => { event.preventDefault(); setLoading(true); setError(""); setPage(1); setReload((current) => current + 1); }}>
         <label><span className="sr-only">Search users</span><input className={inputClass} placeholder="Search name or email" value={search} onChange={(event) => setSearch(event.target.value)} /></label>
         {fixedRole ? <div className={`${inputClass} flex items-center capitalize`}>Doctor accounts</div> : (
@@ -429,7 +595,7 @@ export function UserManagementPage({ mode = "all" }) {
       </form>
       {error && <ErrorState message={error} onRetry={() => { setLoading(true); setError(""); setReload((current) => current + 1); }} className="mb-4" />}
       {loading ? <LoadingState label="Loading accounts..." /> : users.length === 0 ? <EmptyState title="No accounts found" description="No accounts match the selected filters." /> : (
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto" role="region" aria-label="User results, horizontally scrollable table" tabIndex={0}>
           <table className="w-full min-w-[800px] text-left text-sm">
             <thead className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500"><tr><th className="px-3 py-3">Account</th><th className="px-3 py-3">Role</th><th className="px-3 py-3">Profile</th><th className="px-3 py-3">Status</th><th className="px-3 py-3">Created</th></tr></thead>
             <tbody className="divide-y divide-slate-100">{users.map((user) => <tr key={user.id}>
@@ -484,7 +650,7 @@ export function AppointmentsOverviewPage() {
       </form>
       {error && <ErrorState message={error} onRetry={() => { setLoading(true); setError(""); setReload((current) => current + 1); }} className="mb-4" />}
       {loading ? <LoadingState label="Loading appointments..." /> : rows.length === 0 ? <EmptyState title="No appointments found" description="No appointment data matches the selected filters." /> : (
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto" role="region" aria-label="Audit log results, horizontally scrollable table" tabIndex={0}>
           <table className="w-full min-w-[900px] text-left text-sm">
             <thead className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500"><tr><th className="px-3 py-3">Appointment</th><th className="px-3 py-3">Clinic</th><th className="px-3 py-3">Doctor</th><th className="px-3 py-3">Service</th><th className="px-3 py-3">Patient reference</th><th className="px-3 py-3">Schedule</th><th className="px-3 py-3">Status</th></tr></thead>
             <tbody className="divide-y divide-slate-100">{rows.map((row) => <tr key={row.id}><td className="px-3 py-3 font-semibold">#{row.id}</td><td className="px-3 py-3">{row.clinic_name}</td><td className="px-3 py-3">{row.doctor_name}<span className="block text-xs text-slate-500">{row.specialty}</span></td><td className="px-3 py-3">{row.service_name}</td><td className="px-3 py-3">Patient #{row.patient_id}</td><td className="px-3 py-3">{formatDate(row.starts_at)}</td><td className="px-3 py-3"><StatusBadge tone={statusTone(row.status)}>{row.status}</StatusBadge></td></tr>)}</tbody>
@@ -597,15 +763,12 @@ export function NotificationsPage() {
 }
 
 export function UnsupportedAdminFeature({ title }) {
-  const isCategories = title === "Service Oversight";
   return (
     <section className={panelClass}>
       <PageTitle title={title} description="This capability is not configured in the current application data model." />
       <EmptyState
-        title={isCategories ? "No global service-category model exists" : "No platform-settings model exists"}
-        description={isCategories
-          ? "Services currently belong to individual clinics; there is no platform-wide category table, category API, or category authorization workflow. Adding categories safely requires a product decision about their relationship to clinic services."
-          : "The current schema and backend expose no platform-wide settings store or approved settings fields. No settings are displayed or changed here."}
+        title="No global service-category model exists"
+        description="Services currently belong to individual clinics; there is no platform-wide category table, category API, or category authorization workflow. Adding categories safely requires a product decision about their relationship to clinic services."
       />
     </section>
   );

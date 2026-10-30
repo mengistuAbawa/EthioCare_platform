@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Eye, EyeOff, HeartPulse, LockKeyhole, Mail } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/useAuth";
+import { Button, IconButton } from "../../components/ui/Primitives";
 
 const roleRoutes = {
   system_admin: "/admin/dashboard",
@@ -85,7 +86,7 @@ export default function Login() {
           </div>
 
           <div className="rounded-2xl border border-white/20 bg-white/10 p-6 backdrop-blur-sm">
-            <p className="text-sm uppercase tracking-[0.2em] text-teal-100">Trusted care coordination</p>
+            <p className="text-sm uppercase tracking-[0.2em] text-teal-100">Connected care coordination</p>
             <p className="mt-3 text-base text-teal-50/90">
               Manage appointments, clinic operations, and patient schedules in one dependable system.
             </p>
@@ -102,7 +103,7 @@ export default function Login() {
             <form onSubmit={handleSubmit} className="space-y-5">
               <div>
                 <label htmlFor="email" className="mb-2 block text-sm font-medium text-slate-700">
-                  Email address
+                  Email address <span className="text-rose-700" aria-hidden="true">*</span>
                 </label>
                 <div className="relative">
                   <Mail className="pointer-events-none absolute left-3 top-3.5 h-5 w-5 text-slate-400" />
@@ -110,19 +111,22 @@ export default function Login() {
                     id="email"
                     name="email"
                     type="email"
+                    required
                     placeholder="you@example.com"
                     value={form.email}
                     onChange={handleChange}
                     autoComplete="email"
+                    aria-invalid={Boolean(errors.email)}
+                    aria-describedby={errors.email ? "login-email-error" : undefined}
                     className="w-full rounded-xl border border-slate-300 bg-slate-50 py-3 pl-11 pr-3 text-slate-900 placeholder:text-slate-400 focus:border-teal-600 focus:outline-none"
                   />
                 </div>
-                {errors.email && <p className="mt-1 text-sm text-rose-600">{errors.email}</p>}
+                {errors.email && <p id="login-email-error" className="mt-1 text-sm text-rose-700" role="alert">{errors.email}</p>}
               </div>
 
               <div>
                 <label htmlFor="password" className="mb-2 block text-sm font-medium text-slate-700">
-                  Password
+                  Password <span className="text-rose-700" aria-hidden="true">*</span>
                 </label>
                 <div className="relative">
                   <LockKeyhole className="pointer-events-none absolute left-3 top-3.5 h-5 w-5 text-slate-400" />
@@ -130,37 +134,35 @@ export default function Login() {
                     id="password"
                     name="password"
                     type={showPassword ? "text" : "password"}
+                    required
                     placeholder="Enter your password"
                     value={form.password}
                     onChange={handleChange}
                     autoComplete="current-password"
+                    aria-invalid={Boolean(errors.password)}
+                    aria-describedby={errors.password ? "login-password-error" : undefined}
                     className="w-full rounded-xl border border-slate-300 bg-slate-50 py-3 pl-11 pr-11 text-slate-900 placeholder:text-slate-400 focus:border-teal-600 focus:outline-none"
                   />
-                  <button
-                    type="button"
+                  <IconButton
                     onClick={() => setShowPassword((value) => !value)}
-                    aria-label={showPassword ? "Hide password" : "Show password"}
-                    className="absolute right-3 top-3.5 text-slate-500 transition hover:text-slate-700"
+                    label={showPassword ? "Hide password" : "Show password"}
+                    className="absolute right-0 top-1/2 -translate-y-1/2"
                   >
                     {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                  </button>
+                  </IconButton>
                 </div>
-                {errors.password && <p className="mt-1 text-sm text-rose-600">{errors.password}</p>}
+                {errors.password && <p id="login-password-error" className="mt-1 text-sm text-rose-700" role="alert">{errors.password}</p>}
               </div>
 
               {errors.general && (
-                <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+                <div role="alert" className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
                   {errors.general}
                 </div>
               )}
 
-              <button
-                type="submit"
-                disabled={loading}
-                className="flex w-full items-center justify-center rounded-xl bg-teal-700 px-4 py-3 font-semibold text-white transition hover:bg-teal-800 disabled:cursor-not-allowed disabled:bg-teal-500"
-              >
+              <Button type="submit" loading={loading} className="w-full">
                 {loading ? "Signing in..." : "Sign in"}
-              </button>
+              </Button>
             </form>
 
             <div className="mt-6 text-center text-sm text-slate-600">

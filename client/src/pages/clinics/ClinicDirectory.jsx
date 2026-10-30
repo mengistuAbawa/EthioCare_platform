@@ -1,6 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
-import { Building2, MapPin, Search, ShieldCheck, Sparkles } from "lucide-react";
+import { Building2, MapPin, ShieldCheck } from "lucide-react";
 import { Link } from "react-router-dom";
+import EmptyState from "../../components/dashboard/EmptyState";
+import ErrorState from "../../components/dashboard/ErrorState";
+import LoadingState from "../../components/dashboard/LoadingState";
+import { Button, FormField, PageHeader, SearchInput, StatusBadge } from "../../components/ui/Primitives";
 import api from "../../services/api";
 
 export default function ClinicDirectory({ portal = false }) {
@@ -46,85 +50,54 @@ export default function ClinicDirectory({ portal = false }) {
   const Wrapper = portal ? "div" : "main";
 
   return (
-    <Wrapper className={portal ? "space-y-6" : "min-h-screen bg-slate-100 px-4 py-12"}>
+    <Wrapper className={portal ? "space-y-6" : "flex-1 bg-page px-4 py-12"}>
       <div className="mx-auto max-w-6xl">
-        <header className="mb-8 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-          <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-            <div>
-              <p className="text-sm uppercase tracking-[0.2em] text-teal-600">{portal ? "Patient Portal" : "Clinic directory"}</p>
-              <h1 className="mt-2 text-3xl font-bold text-slate-900">Discover trusted care providers</h1>
-            </div>
-            <Link
-              to={portal ? "/patient/dashboard" : "/login"}
-              className="inline-flex items-center justify-center rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white"
-            >
-              {portal ? "Dashboard" : "Sign in"}
-            </Link>
-          </div>
-        </header>
+        <PageHeader
+          as={portal ? "h2" : "h1"}
+          title="Discover care providers"
+          description="Browse clinics available through EthioCare."
+          actions={portal ? <Link to="/patient/dashboard" className="ui-button ui-button-secondary">Dashboard</Link> : null}
+          className="mb-8"
+        />
 
-        <section className="mb-8 grid gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:grid-cols-[1.5fr_1fr_auto]">
-          <label className="relative block">
-            <span className="sr-only">Search clinics</span>
-            <Search className="pointer-events-none absolute left-3 top-3.5 h-5 w-5 text-slate-400" />
-            <input
-              value={search}
-              onChange={(event) => { setPage(1); setSearch(event.target.value); }}
-              placeholder="Search by clinic or specialization"
-              className="w-full rounded-xl border border-slate-300 bg-slate-50 py-3 pl-11 pr-3 text-slate-900 placeholder:text-slate-400 focus:border-teal-600 focus:outline-none"
-            />
-          </label>
-
-          <label className="relative block">
-            <span className="sr-only">Filter by city</span>
-            <MapPin className="pointer-events-none absolute left-3 top-3.5 h-5 w-5 text-slate-400" />
+        <section aria-label="Filter clinics" className="ui-card mb-8 grid gap-4 p-4 md:grid-cols-[1.5fr_1fr_auto]">
+          <SearchInput
+            label="Search clinics"
+            value={search}
+            onChange={(event) => { setPage(1); setSearch(event.target.value); }}
+            placeholder="Search by clinic or specialization"
+          />
+          <FormField id="clinic-city-filter" label="City" className="mb-0">
             <input
               value={city}
               onChange={(event) => { setPage(1); setCity(event.target.value); }}
               placeholder="Filter by city"
-              className="w-full rounded-xl border border-slate-300 bg-slate-50 py-3 pl-11 pr-3 text-slate-900 placeholder:text-slate-400 focus:border-teal-600 focus:outline-none"
+              className="ui-control w-full"
             />
-          </label>
-
-          <button
-            type="button"
-            onClick={() => {
-              setSearch("");
-              setCity("");
-              setPage(1);
-            }}
-            className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-700"
+          </FormField>
+          <Button
+            variant="secondary"
+            onClick={() => { setSearch(""); setCity(""); setPage(1); }}
           >
-            Reset
-          </button>
+            Reset filters
+          </Button>
         </section>
 
         {loading ? (
-          <div className="rounded-2xl border border-slate-200 bg-white p-10 text-center text-slate-500 shadow-sm">
-            Loading clinics...
-          </div>
+          <LoadingState label="Loading clinics..." />
         ) : error ? (
-          <div className="rounded-2xl border border-rose-200 bg-rose-50 p-5 text-rose-700 shadow-sm">
-            {error}
-            <button type="button" className="ml-3 font-semibold underline" onClick={() => { setLoading(true); setAttempt((current) => current + 1); }}>
-              Retry
-            </button>
-          </div>
+          <ErrorState message={error} onRetry={() => { setLoading(true); setAttempt((current) => current + 1); }} />
         ) : clinics.length === 0 ? (
-          <div className="rounded-2xl border border-slate-200 bg-white p-10 text-center text-slate-500 shadow-sm">
-            No verified clinics match your search.
-          </div>
+          <EmptyState title="No clinics found" description="No clinics match the current search. Adjust or clear your filters and try again." />
         ) : (
           <section className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
             {clinics.map((clinic) => (
-              <article key={clinic.id} className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+              <article key={clinic.id} className="ui-card p-5 transition-colors hover:border-brand-teal">
                 <div className="mb-4 flex items-center justify-between">
                   <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-teal-100 text-teal-700">
                     <Building2 size={22} />
                   </div>
-                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-700">
-                    <ShieldCheck size={12} /> Verified
-                  </span>
+                  <StatusBadge status="verified" label={<><ShieldCheck size={12} aria-hidden="true" /> Verified</>} />
                 </div>
 
                 <h2 className="text-xl font-bold text-slate-900">{clinic.name}</h2>
@@ -136,13 +109,10 @@ export default function ClinicDirectory({ portal = false }) {
                 <p className="mt-4 line-clamp-3 text-sm text-slate-600">{clinic.address}</p>
 
                 <div className="mt-5 flex items-center justify-between border-t border-slate-100 pt-4">
-                  <div className="flex items-center gap-2 text-sm text-slate-500">
-                    <Sparkles size={14} className="text-teal-600" />
-                    Trusted care
-                  </div>
+                  <span className="text-sm text-text-secondary">Clinic profile</span>
                   <Link
                     to={portal ? `/patient/clinics/${clinic.id}` : `/clinic/${clinic.id}`}
-                    className="inline-flex items-center rounded-xl bg-teal-700 px-3 py-2 text-sm font-semibold text-white"
+                    className="ui-button ui-button-primary"
                   >
                     View clinic
                   </Link>
@@ -153,23 +123,23 @@ export default function ClinicDirectory({ portal = false }) {
         )}
         {!loading && !error && pagination?.totalPages > 1 && (
           <nav className="mt-6 flex items-center justify-center gap-4" aria-label="Clinic directory pages">
-            <button
+            <Button
               type="button"
+              variant="secondary"
               disabled={page <= 1}
               onClick={() => { setLoading(true); setPage((current) => current - 1); }}
-              className="min-h-10 rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-medium disabled:opacity-40"
             >
               Previous
-            </button>
+            </Button>
             <span className="text-sm text-slate-600">Page {page} of {pagination.totalPages}</span>
-            <button
+            <Button
               type="button"
+              variant="secondary"
               disabled={page >= pagination.totalPages}
               onClick={() => { setLoading(true); setPage((current) => current + 1); }}
-              className="min-h-10 rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-medium disabled:opacity-40"
             >
               Next
-            </button>
+            </Button>
           </nav>
         )}
       </div>

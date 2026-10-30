@@ -51,7 +51,7 @@ export default function MobileSidebar({ open, onClose, children }) {
         tabIndex={open ? 0 : -1}
         aria-label="Close navigation menu"
         onClick={onClose}
-        className={`absolute inset-0 cursor-default bg-slate-950/40 transition-opacity motion-reduce:transition-none ${
+        className={`absolute inset-0 cursor-default bg-brand-navy/40 transition-opacity motion-reduce:transition-none ${
           open ? "opacity-100" : "opacity-0"
         }`}
       />
@@ -60,7 +60,7 @@ export default function MobileSidebar({ open, onClose, children }) {
         role="dialog"
         aria-modal={open ? "true" : undefined}
         aria-label="Dashboard navigation"
-        className={`absolute inset-y-0 left-0 flex w-[min(20rem,85vw)] flex-col border-r border-slate-200 bg-white shadow-xl transition-transform motion-reduce:transition-none ${
+        className={`absolute inset-y-0 left-0 flex w-[min(20rem,85vw)] flex-col border-r border-border bg-surface shadow-xl transition-transform motion-reduce:transition-none ${
           open ? "translate-x-0" : "-translate-x-full"
         }`}
       >
@@ -69,7 +69,7 @@ export default function MobileSidebar({ open, onClose, children }) {
           onClick={onClose}
           data-dialog-close
           aria-label="Close navigation menu"
-          className="absolute right-3 top-5 z-10 rounded-lg p-2 text-slate-500 hover:bg-slate-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700"
+          className="absolute right-3 top-4 z-10 flex min-h-11 min-w-11 items-center justify-center rounded-lg text-text-secondary hover:bg-page"
         >
           <X size={20} />
         </button>

@@ -9,11 +9,16 @@ const {
   reviewClinic,
   updateClinicStatus,
   listUsers,
+  createManagedUser,
   listAppointments,
   listAuditLogs,
   listNotifications,
   markNotificationRead,
 } = require("../controllers/adminController");
+const {
+  getAdminSettings,
+  updateAdminSettings,
+} = require("../controllers/platformSettingsController");
 const {
   handleAdminValidationErrors,
   clinicListRules,
@@ -22,6 +27,7 @@ const {
   clinicReviewRules,
   clinicStatusRules,
   userListRules,
+  createManagedUserRules,
   appointmentListRules,
   auditListRules,
   paginationRules,
@@ -32,12 +38,15 @@ const router = express.Router();
 router.use(authenticate, requireSystemAdmin);
 
 router.get("/dashboard", getDashboardSummary);
+router.get("/settings", getAdminSettings);
+router.put("/settings", updateAdminSettings);
 router.get("/clinics", clinicListRules, handleAdminValidationErrors, listClinics);
 router.get("/clinics/:clinicId", clinicParamRules, handleAdminValidationErrors, getClinic);
 router.patch("/clinics/:clinicId", clinicUpdateRules, handleAdminValidationErrors, updateClinic);
 router.post("/clinics/:clinicId/review", clinicReviewRules, handleAdminValidationErrors, reviewClinic);
 router.patch("/clinics/:clinicId/status", clinicStatusRules, handleAdminValidationErrors, updateClinicStatus);
 router.get("/users", userListRules, handleAdminValidationErrors, listUsers);
+router.post("/users", createManagedUserRules, handleAdminValidationErrors, createManagedUser);
 router.get("/appointments", appointmentListRules, handleAdminValidationErrors, listAppointments);
 router.get("/audit-logs", auditListRules, handleAdminValidationErrors, listAuditLogs);
 router.get("/notifications", paginationRules, handleAdminValidationErrors, listNotifications);

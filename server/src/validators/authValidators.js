@@ -47,15 +47,8 @@ const registerRules = [
     }),
   body("role")
     .custom((value) => {
-      const forbiddenRoles = [
-        "system_admin",
-        "clinic_admin",
-        "doctor",
-        "receptionist",
-      ];
-
-      if (value && forbiddenRoles.includes(String(value).toLowerCase())) {
-        throw new Error("Public registration cannot create privileged accounts.");
+      if (value && String(value).trim().toLowerCase() !== "patient") {
+        throw new Error("Public registration is limited to patient accounts.");
       }
 
       return true;
@@ -129,9 +122,25 @@ const profileRules = [
     .optional(),
 ];
 
+const passwordChangeRules = [
+  body("current_password")
+    .isString()
+    .notEmpty()
+    .withMessage("Current password is required."),
+  body("new_password")
+    .isString()
+    .isLength({ min: 12, max: 128 })
+    .withMessage("New password must be between 12 and 128 characters."),
+  body("confirm_password")
+    .isString()
+    .custom((value, { req }) => value === req.body.new_password)
+    .withMessage("Password confirmation does not match."),
+];
+
 module.exports = {
   registerRules,
   loginRules,
   profileRules,
+  passwordChangeRules,
   handleValidationErrors,
 };

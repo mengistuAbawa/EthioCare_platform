@@ -45,6 +45,21 @@ const sendDatabaseError = (error, res, message, label) => {
   return res.status(500).json({ success: false, message });
 };
 
+const getPendingAssessmentCount = async (doctorId) => {
+  try {
+    const result = await pool.query(
+      `SELECT COUNT(*)::int AS pending_assessments
+         FROM patient_health_assessments
+        WHERE doctor_id = $1 AND status IN ('submitted', 'in_review')`,
+      [doctorId]
+    );
+    return result.rows[0];
+  } catch (error) {
+    if (error.code === "42P01") return { pending_assessments: 0 };
+    throw error;
+  }
+};
+
 const appointmentSelect = `
   SELECT a.id, a.status, a.starts_at, a.ends_at, a.reason,
          p.id AS patient_id, p.full_name AS patient_name, p.phone AS patient_phone,
@@ -92,12 +107,7 @@ const getDashboard = async (req, res) => {
           ORDER BY a.starts_at, a.id`,
         [doctor.id, range.from, DEFAULT_TIME_ZONE]
       ),
-      pool.query(
-        `SELECT COUNT(*)::int AS pending_assessments
-           FROM patient_health_assessments
-          WHERE doctor_id = $1 AND status IN ('submitted', 'in_review')`,
-        [doctor.id]
-      ),
+      getPendingAssessmentCount(doctor.id),
       pool.query(
         `SELECT COUNT(*)::int AS unread_notifications
            FROM notifications n
@@ -114,7 +124,7 @@ const getDashboard = async (req, res) => {
       success: true,
       data: {
         date: range.from,
-        stats: { ...stats.rows[0], ...assessments.rows[0], ...unread.rows[0] },
+        stats: { ...stats.rows[0], ...assessments, ...unread.rows[0] },
         appointments: appointments.rows,
         unsupported_metrics: ["waiting_patients", "lab_results_awaiting_review", "follow_ups_due"],
       },

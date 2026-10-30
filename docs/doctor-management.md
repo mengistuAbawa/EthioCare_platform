@@ -15,10 +15,12 @@ it is never returned by public endpoints. Approval of profile details is not a
 claim that a professional license was independently verified.
 
 There is no invitation/email or password-setup service in the existing application.
-Clinic administrators can link an existing active user with the `doctor` role;
-the application does not create an account with an insecure default password.
-An authorized system workflow must provision doctor accounts before they appear
-in the account selector.
+System Admins can create doctor login accounts from **User Management** by setting
+an initial password. The clinic administrator then links that account to a
+verified clinic and creates its doctor profile. Share initial credentials only
+through an established secure channel; the account holder can change the
+password from Account Details. Clinic administrator accounts are likewise
+created by a System Admin and assigned to a selected clinic during creation.
 
 ## Migration
 

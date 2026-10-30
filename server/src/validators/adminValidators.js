@@ -94,6 +94,28 @@ const userListRules = [
   query("status").optional().isIn(["active", "inactive"]),
 ];
 
+const createManagedUserRules = [
+  body().custom((value) => {
+    const allowed = ["full_name", "email", "phone", "password", "role", "clinic_id"];
+    if (Object.keys(value || {}).some((field) => !allowed.includes(field))) {
+      throw new Error("Provide only supported account fields.");
+    }
+    return true;
+  }),
+  body("full_name").isString().trim().isLength({ min: 2, max: 120 }),
+  body("email").isEmail().normalizeEmail(),
+  body("phone").optional({ values: "falsy" }).isString().trim().isLength({ min: 7, max: 30 }),
+  body("password").isString().isLength({ min: 12, max: 128 }),
+  body("role").isIn(["doctor", "clinic_admin", "receptionist"]),
+  body("clinic_id").if((value, { req }) => ["clinic_admin", "receptionist"].includes(req.body.role))
+    .isInt({ min: 1, max: Number.MAX_SAFE_INTEGER })
+    .toInt()
+    .withMessage("A valid clinic is required for clinic administrator and receptionist accounts."),
+  body("clinic_id").if(body("role").equals("doctor"))
+    .not().exists()
+    .withMessage("Doctor accounts must be assigned through a clinic doctor workflow."),
+];
+
 const appointmentListRules = [
   ...paginationRules,
   query("status").optional().isIn(["pending", "confirmed", "completed", "cancelled", "rejected", "no_show"]),
@@ -133,6 +155,7 @@ module.exports = {
   clinicReviewRules,
   clinicStatusRules,
   userListRules,
+  createManagedUserRules,
   appointmentListRules,
   auditListRules,
   notificationParamRules,

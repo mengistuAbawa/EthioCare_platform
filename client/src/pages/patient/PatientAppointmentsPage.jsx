@@ -2,10 +2,9 @@ import { useCallback, useEffect, useState } from "react";
 import EmptyState from "../../components/dashboard/EmptyState";
 import ErrorState from "../../components/dashboard/ErrorState";
 import LoadingState from "../../components/dashboard/LoadingState";
+import { Button, FormField, PageHeader, StatusBadge } from "../../components/ui/Primitives";
 import { getMyAppointments } from "../../services/patientAppointmentService";
 
-const panelClass = "rounded-2xl border border-slate-200 bg-white p-5 sm:p-6";
-const buttonClass = "inline-flex min-h-10 items-center justify-center rounded-xl bg-teal-700 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 disabled:cursor-not-allowed disabled:opacity-60";
 const formatDate = (value) => new Date(value).toLocaleString();
 const statusOptions = ["pending", "confirmed", "completed", "cancelled", "rejected", "no_show"];
 
@@ -38,17 +37,15 @@ export default function PatientAppointmentsPage({ history = false }) {
   }, [attempt, load]);
 
   return (
-    <section className={panelClass}>
-      <div className="mb-5">
-        <h2 className="text-xl font-bold text-slate-950">{history ? "Appointment History" : "My Appointments"}</h2>
-        <p className="mt-1 text-sm text-slate-600">
-          Records are limited to your authenticated account. Appointment changes are not currently supported.
-        </p>
-      </div>
-      <label className="mb-4 block max-w-xs">
-        <span className="sr-only">Filter appointments by status</span>
+    <section className="ui-card p-5 sm:p-6">
+      <PageHeader
+        title={history ? "Appointment history" : "My appointments"}
+        description="Records are limited to your authenticated account. Appointment changes are not currently supported."
+        className="mb-5"
+      />
+      <FormField id="appointment-status-filter" label="Filter by status" className="mb-4 max-w-xs">
         <select
-          className="min-h-11 w-full rounded-xl border border-slate-300 px-3 text-sm focus:border-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-100"
+          className="ui-control w-full text-sm"
           value={status}
           onChange={(event) => {
             setLoading(true);
@@ -60,7 +57,7 @@ export default function PatientAppointmentsPage({ history = false }) {
           <option value="">All statuses</option>
           {statusOptions.map((item) => <option key={item} value={item}>{item.replaceAll("_", " ")}</option>)}
         </select>
-      </label>
+      </FormField>
 
       {error && (
         <ErrorState
@@ -94,9 +91,7 @@ export default function PatientAppointmentsPage({ history = false }) {
                   </p>
                 </div>
                 <div className="sm:text-right">
-                  <span className="inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold capitalize text-slate-700">
-                    {appointment.status.replaceAll("_", " ")}
-                  </span>
+                  <StatusBadge status={appointment.status} />
                   <p className="mt-2 text-xs text-slate-500">Reference #{appointment.id}</p>
                   {appointment.cancellation_reason && (
                     <p className="mt-2 max-w-sm text-sm text-slate-600">
@@ -111,22 +106,22 @@ export default function PatientAppointmentsPage({ history = false }) {
             <div className="flex items-center justify-between border-t border-slate-100 pt-4">
               <p className="text-sm text-slate-600">Page {pagination.page} of {pagination.pages} · {pagination.total} appointments</p>
               <div className="flex gap-2">
-                <button
+                <Button
                   type="button"
-                  className={buttonClass}
+                  variant="secondary"
                   disabled={page <= 1}
                   onClick={() => { setLoading(true); setPage((current) => current - 1); }}
                 >
                   Previous
-                </button>
-                <button
+                </Button>
+                <Button
                   type="button"
-                  className={buttonClass}
+                  variant="secondary"
                   disabled={page >= pagination.pages}
                   onClick={() => { setLoading(true); setPage((current) => current + 1); }}
                 >
                   Next
-                </button>
+                </Button>
               </div>
             </div>
           )}

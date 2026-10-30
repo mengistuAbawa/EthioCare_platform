@@ -1,11 +1,15 @@
 import { useEffect, useState } from "react";
 import {
-  ArrowDown,
   ArrowRight,
+  ArrowUpRight,
+  BadgeCheck,
+  Building2,
+  CalendarDays,
   CalendarCheck2,
-  CalendarClock,
+  Clock3,
   CheckCircle2,
   HeartPulse,
+  MapPin,
   Menu,
   ShieldCheck,
   Stethoscope,
@@ -14,24 +18,16 @@ import {
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../../context/useAuth";
-
-const dashboardByRole = {
-  patient: "/patient/dashboard",
-  doctor: "/doctor/dashboard",
-  receptionist: "/receptionist/dashboard",
-  clinic_admin: "/clinic/dashboard",
-  system_admin: "/admin/dashboard",
-};
+import api from "../../services/api";
+import "./PublicHome.css";
 
 const publicLinks = [
   ["Home", "home"],
-  ["About EthioCare", "about"],
+  ["About", "about"],
   ["How It Works", "how-it-works"],
   ["Services", "services"],
-  ["For Patients", "for-patients"],
-  ["For Doctors", "for-doctors"],
-  ["For Clinics", "for-clinics"],
-  ["Help & FAQ", "faq"],
+  ["Portals", "for-patients"],
+  ["FAQ", "faq"],
   ["Contact", "contact"],
 ];
 
@@ -40,8 +36,8 @@ const roles = [
     id: "for-patients",
     title: "Patient Portal",
     icon: HeartPulse,
-    description: "Create a patient account, discover participating clinics, manage appointments, and review the health information available to your account.",
-    availability: "Patient registration and appointment features depend on clinic participation and configured services.",
+    description: "Create a patient account, discover participating clinics and approved doctor profiles, ask a doctor health-related questions through a health assessment, and review the information available to your account.",
+    availability: "Patient registration and supported features depend on clinic participation and configured services. Appointment booking is not available in the current workflow.",
   },
   {
     id: "for-doctors",
@@ -69,12 +65,10 @@ const roles = [
 const steps = [
   "Browse verified, participating clinics and their published services.",
   "Create a patient account if you do not already have one.",
-  "Review clinic, service, and doctor information before choosing care.",
-  "Request an appointment using the available booking workflow.",
-  "Check your appointment details and any status updates in your account.",
-  "Attend the appointment at the clinic and follow clinician-provided instructions.",
-  "Review the appointment history and health information available to your account.",
-  "Follow up with your clinic or clinician when further care is recommended.",
+  "Review approved doctor profiles, qualifications, clinic assignments, services, and availability information.",
+  "Submit a health assessment to share a health-related question or concern with a selected doctor.",
+  "Review assessment status, doctor feedback, approved treatment plans, and attached files in your account.",
+  "Use your clinic or clinician's established channel for urgent or emergency care and for follow-up when further care is recommended.",
 ];
 
 const faqs = [
@@ -87,8 +81,16 @@ const faqs = [
     answer: "Choose Register to create a patient account with your name, email, optional phone number, and password. Public registration cannot create doctor, receptionist, or administrator roles.",
   },
   {
+    question: "Can I view doctor profiles or ask a health-related question?",
+    answer: "Patients can browse approved doctor profiles for qualifications, clinic and service information, consultation fees, and availability status. To ask a health-related question, sign in and create a health assessment, select an available doctor, and submit the information for doctor review.",
+  },
+  {
     question: "How do I book an appointment?",
-    answer: "Sign in as a patient, find a participating clinic, and use the appointment features available for that clinic. Availability depends on current clinic schedules.",
+    answer: "Appointment booking is not available in the current application. The database has appointment and schedule tables, but the backend has no patient-facing availability or booking API. Any future booking workflow must validate live slots and clinic policy on the server before confirming a request.",
+  },
+  {
+    question: "Where can I find my uploaded medical files?",
+    answer: "Files are listed within each health assessment rather than in a separate patient file library. Open the assessment from your assessment history to view its attached files through the existing ownership-checked download flow.",
   },
   {
     question: "Can I register as a doctor?",
@@ -100,7 +102,7 @@ const faqs = [
   },
   {
     question: "How do I contact support?",
-    answer: "No public support contact has been configured in this application. If you already have an account, contact your clinic administrator through your established clinic channel.",
+    answer: "Configured platform contact details appear in the footer. If no details are listed, contact your clinic administrator through your established clinic channel.",
   },
   {
     question: "Can I access my medical information online?",
@@ -112,40 +114,33 @@ const faqs = [
   },
 ];
 
-function PublicNav({ mobileOpen, setMobileOpen, dashboardPath }) {
+function PublicNav({ mobileOpen, setMobileOpen, isAuthenticated, platformName }) {
   const closeMenu = () => setMobileOpen(false);
 
   return (
     <>
-      <header className="sticky top-0 z-30 border-b border-slate-200/80 bg-white/95 backdrop-blur">
-        <div className="mx-auto flex min-h-18 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
-          <Link to="/" className="flex shrink-0 items-center gap-2.5" aria-label="EthioCare home">
-            <span className="flex size-10 items-center justify-center rounded-xl bg-teal-700 text-white"><HeartPulse size={21} /></span>
-            <span className="text-xl font-bold tracking-tight text-slate-950">EthioCare</span>
+      <header className="public-header sticky top-0 z-30 border-b border-slate-200/80 bg-white/95 backdrop-blur">
+        <div className="public-header-inner mx-auto flex min-h-18 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
+          <Link to="/" className="public-brand flex shrink-0 items-center gap-2.5" aria-label="EthioCare home">
+            <span className="public-brand-mark flex size-10 items-center justify-center rounded-xl bg-teal-700 text-white"><HeartPulse size={21} /></span>
+            <span className="public-brand-copy">
+              <span className="block text-xl font-bold tracking-tight text-slate-950">{platformName}</span>
+              <span className="hidden text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500 sm:block">Care, connected</span>
+            </span>
           </Link>
 
-          <nav aria-label="Public navigation" className="hidden items-center gap-5 xl:flex">
-            {publicLinks.map(([label, section]) => (
-              <a key={section} href={`#${section}`} className="text-sm font-medium text-slate-600 transition hover:text-teal-800 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-teal-700">
-                {label}
-              </a>
-            ))}
-          </nav>
-
-          <div className="hidden shrink-0 items-center gap-2 md:flex">
-            {dashboardPath ? (
-              <Link to={dashboardPath} className="rounded-xl bg-teal-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-teal-800">Open dashboard</Link>
-            ) : (
+          <div className="public-header-actions hidden shrink-0 items-center gap-2 md:flex">
+            {!isAuthenticated && (
               <>
-                <Link to="/login" className="rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-100">Login</Link>
-                <Link to="/register" className="rounded-xl bg-teal-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-teal-800">Register</Link>
+                <Link to="/login" className="public-login-link rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-100">Sign in</Link>
+                <Link to="/register" className="public-button public-button-primary rounded-xl bg-teal-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-teal-800">Create patient account</Link>
               </>
             )}
           </div>
 
           <button
             type="button"
-            className="flex size-11 items-center justify-center rounded-xl text-slate-700 hover:bg-slate-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 xl:hidden"
+            className="flex size-11 items-center justify-center rounded-xl text-slate-700 hover:bg-slate-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700"
             aria-label={mobileOpen ? "Close navigation" : "Open navigation"}
             aria-expanded={mobileOpen}
             onClick={() => setMobileOpen((open) => !open)}
@@ -156,23 +151,21 @@ function PublicNav({ mobileOpen, setMobileOpen, dashboardPath }) {
       </header>
 
       {mobileOpen && (
-        <div className="fixed inset-0 z-40 xl:hidden" role="dialog" aria-modal="true" aria-label="Navigation menu">
+        <div className="fixed inset-0 z-40" role="dialog" aria-modal="true" aria-label="Navigation menu">
           <button type="button" className="absolute inset-0 bg-slate-950/30" onClick={closeMenu} aria-label="Close navigation" />
-          <nav className="absolute right-0 top-0 flex h-full w-[min(22rem,88vw)] flex-col overflow-y-auto bg-white p-5 shadow-2xl" aria-label="Mobile public navigation">
+          <nav className="absolute left-0 top-0 flex h-full w-[min(22rem,88vw)] flex-col overflow-y-auto border-r border-slate-200 bg-white p-5 shadow-2xl" aria-label="Public sidebar">
             <div className="mb-5 flex items-center justify-between">
-              <span className="font-bold text-slate-950">Explore EthioCare</span>
+              <span className="font-bold text-slate-950">Explore {platformName}</span>
               <button type="button" onClick={closeMenu} className="rounded-lg p-2 text-slate-600 hover:bg-slate-100" aria-label="Close navigation"><X size={20} /></button>
             </div>
             {publicLinks.map(([label, section]) => (
               <a key={section} href={`#${section}`} onClick={closeMenu} className="rounded-lg px-3 py-3 text-sm font-medium text-slate-700 hover:bg-teal-50 hover:text-teal-900">{label}</a>
             ))}
             <div className="mt-4 grid grid-cols-2 gap-2 border-t border-slate-200 pt-4">
-              {dashboardPath ? (
-                <Link to={dashboardPath} onClick={closeMenu} className="col-span-2 rounded-xl bg-teal-700 px-4 py-3 text-center text-sm font-semibold text-white">Open dashboard</Link>
-              ) : (
+              {!isAuthenticated && (
                 <>
                   <Link to="/login" onClick={closeMenu} className="rounded-xl border border-slate-300 px-4 py-3 text-center text-sm font-semibold text-slate-700">Login</Link>
-                  <Link to="/register" onClick={closeMenu} className="rounded-xl bg-teal-700 px-4 py-3 text-center text-sm font-semibold text-white">Register</Link>
+                  <Link to="/register" onClick={closeMenu} className="rounded-xl bg-teal-700 px-4 py-3 text-center text-sm font-semibold text-white">Create patient account</Link>
                 </>
               )}
             </div>
@@ -184,9 +177,22 @@ function PublicNav({ mobileOpen, setMobileOpen, dashboardPath }) {
 }
 
 export default function PublicHome({ initialSection = "" }) {
-  const { user, isAuthenticated, loading } = useAuth();
+  const { isAuthenticated, loading } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const dashboardPath = isAuthenticated ? dashboardByRole[user?.role] : "";
+  const [platformSettings, setPlatformSettings] = useState(null);
+  const [platformSettingsError, setPlatformSettingsError] = useState("");
+
+  useEffect(() => {
+    api.get("/settings")
+      .then((response) => {
+        setPlatformSettings(response.data?.data || null);
+        setPlatformSettingsError("");
+      })
+      .catch(() => {
+        setPlatformSettings(null);
+        setPlatformSettingsError("Platform contact details are temporarily unavailable.");
+      });
+  }, []);
 
   useEffect(() => {
     if (!initialSection) return;
@@ -194,63 +200,120 @@ export default function PublicHome({ initialSection = "" }) {
   }, [initialSection]);
 
   return (
-    <div className="min-h-screen bg-white text-slate-900">
-      <PublicNav mobileOpen={mobileOpen} setMobileOpen={setMobileOpen} dashboardPath={dashboardPath} />
+    <div className="public-site min-h-screen bg-white text-slate-900">
+      <a href="#main-content" className="ui-skip-link">
+        Skip to main content
+      </a>
+      <PublicNav
+        mobileOpen={mobileOpen}
+        setMobileOpen={setMobileOpen}
+        isAuthenticated={isAuthenticated}
+        platformName={platformSettings?.platform_name || "EthioCare"}
+      />
+      {platformSettings?.maintenance_mode && (
+        <p role="status" className="border-b border-amber-200 bg-amber-50 px-4 py-3 text-center text-sm text-amber-950">
+          {platformSettings.maintenance_message}
+        </p>
+      )}
+      {platformSettingsError && (
+        <p role="status" className="border-b border-amber-200 bg-amber-50 px-4 py-3 text-center text-sm text-amber-950">
+          {platformSettingsError}
+        </p>
+      )}
 
-      <main>
-        <section id="home" className="relative isolate scroll-mt-24 overflow-hidden bg-gradient-to-br from-teal-50 via-white to-cyan-50">
-          <div aria-hidden="true" className="absolute -right-36 -top-32 -z-10 size-[34rem] rounded-full border-[70px] border-teal-100/60" />
-          <div className="mx-auto grid max-w-7xl items-center gap-12 px-4 py-16 sm:px-6 sm:py-24 lg:grid-cols-[1.05fr_.95fr] lg:px-8 lg:py-28">
-            <div>
+      <main id="main-content" tabIndex="-1">
+        <section id="home" className="public-hero relative isolate scroll-mt-24 overflow-hidden bg-linear-to-br from-teal-50 via-white to-cyan-50">
+          <div aria-hidden="true" className="public-hero-orb absolute -right-36 -top-32 -z-10 size-136 rounded-full border-70 border-teal-100/60" />
+          <div className="public-hero-grid mx-auto grid max-w-7xl items-center gap-12 px-4 py-16 sm:px-6 sm:py-24 lg:grid-cols-[1.05fr_.95fr] lg:px-8 lg:py-28">
+            <div className="public-hero-copy">
               <p className="mb-5 inline-flex items-center gap-2 rounded-full border border-teal-200 bg-white/80 px-3 py-1.5 text-xs font-bold uppercase tracking-[0.14em] text-teal-800">
-                <span className="size-2 rounded-full bg-teal-600" /> Healthcare coordination platform
+                <span className="size-2 rounded-full bg-teal-600" /> Healthcare, more connected
               </p>
               <h1 className="max-w-3xl text-4xl font-bold leading-[1.1] tracking-tight text-slate-950 sm:text-5xl lg:text-6xl">
-                Healthcare Access, <span className="text-teal-700">Simplified</span> with EthioCare.
+                Your care journey, <span className="text-teal-700">all in one place.</span>
               </h1>
               <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-600">
-                Connect with participating clinics and doctors, coordinate appointments, and access the healthcare information your account is permitted to see.
+                Discover participating clinics, request appointments, and keep track of the care information available to you—with one connected experience.
               </p>
-              <div className="mt-8 flex flex-wrap gap-3">
-                <Link to="/clinics" className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-teal-700 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-teal-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700">
-                  Find Clinics <ArrowRight size={17} />
+              <div className="public-hero-actions mt-8 flex flex-wrap gap-3">
+                <Link to="/clinics" className="public-button public-button-primary inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-teal-700 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-teal-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700">
+                  Explore clinics <ArrowRight size={17} />
                 </Link>
                 {!isAuthenticated && !loading && (
                   <>
-                    <Link to="/register" className="inline-flex min-h-12 items-center justify-center rounded-xl border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-800 hover:border-teal-500 hover:text-teal-800">Create Patient Account</Link>
-                    <Link to="/login" className="inline-flex min-h-12 items-center justify-center rounded-xl px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-white">Sign In</Link>
+                    <Link to="/register" className="public-button public-button-secondary inline-flex min-h-12 items-center justify-center rounded-xl border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-800 hover:border-teal-500 hover:text-teal-800">Create patient account</Link>
                   </>
                 )}
-                {dashboardPath && <Link to={dashboardPath} className="inline-flex min-h-12 items-center justify-center rounded-xl border border-teal-200 bg-white px-5 py-3 text-sm font-semibold text-teal-900">Go to your dashboard</Link>}
               </div>
-              <p className="mt-5 text-xs leading-5 text-slate-500">Availability depends on participating clinics, their published schedules, and your account permissions.</p>
+              <div className="public-hero-note mt-6 flex items-start gap-2.5 text-xs leading-5 text-slate-500">
+                <ShieldCheck className="mt-0.5 shrink-0 text-teal-700" size={16} />
+                <p>Access depends on participating clinics, their published schedules, and your account permissions.</p>
+              </div>
             </div>
 
-            <div className="relative mx-auto w-full max-w-xl">
-              <div className="rounded-[2rem] border border-teal-100 bg-white p-5 shadow-xl shadow-teal-900/10 sm:p-7">
-                <div className="flex items-start justify-between gap-4">
+            <div className="public-hero-visual relative mx-auto w-full max-w-xl">
+              <div aria-hidden="true" className="public-hero-visual-glow absolute inset-6 rounded-[2.5rem] bg-teal-200/70 blur-2xl" />
+              <div className="public-care-card relative rounded-4xl border border-teal-100 bg-white p-5 shadow-xl shadow-teal-900/10 sm:p-7">
+                <div className="public-care-card-heading flex items-start justify-between gap-4">
                   <div>
-                    <p className="text-sm font-semibold text-teal-800">One connected workspace</p>
-                    <h2 className="mt-2 text-2xl font-bold text-slate-950">Care coordination, made clearer.</h2>
+                    <p className="text-xs font-bold uppercase tracking-[0.16em] text-teal-800">Your care, organized</p>
+                    <h2 className="mt-2 text-2xl font-bold text-slate-950">A clearer way to manage care.</h2>
                   </div>
                   <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-teal-700 text-white"><HeartPulse size={24} /></span>
                 </div>
-                <div className="mt-7 space-y-3">
-                  {[
-                    [CalendarCheck2, "Appointment access", "Explore participating clinics and manage supported appointments."],
-                    [CalendarClock, "Clinic schedules", "View available providers and service information where published."],
-                    [ShieldCheck, "Role-based access", "Account permissions shape which information and workflows are available."],
-                  ].map(([Icon, title, copy]) => (
-                    <div key={title} className="flex gap-4 rounded-2xl bg-slate-50 p-4">
-                      <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-white text-teal-800 shadow-sm"><Icon size={20} /></span>
-                      <div><h3 className="font-semibold text-slate-900">{title}</h3><p className="mt-1 text-sm leading-5 text-slate-600">{copy}</p></div>
-                    </div>
-                  ))}
+                <div className="public-care-card-meta mt-6 flex items-center justify-between border-y border-slate-100 py-3 text-xs font-medium text-slate-500">
+                  <span className="inline-flex items-center gap-1.5"><CalendarDays size={15} className="text-teal-700" /> Appointment overview</span>
+                  <span>Patient workspace</span>
                 </div>
-                <a href="#how-it-works" className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-teal-800 hover:text-teal-950">See how it works <ArrowDown size={16} /></a>
+                <div className="public-care-card-content mt-5 space-y-3">
+                  <div className="public-appointment-row flex items-center gap-3 rounded-2xl bg-teal-50/80 p-4">
+                    <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-white text-teal-800 shadow-sm"><CalendarCheck2 size={20} /></span>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-semibold text-slate-900">Appointments</p>
+                      <p className="mt-1 text-xs leading-5 text-slate-600">Request a visit with a participating clinic.</p>
+                    </div>
+                    <ArrowUpRight size={17} className="shrink-0 text-teal-800" />
+                  </div>
+                  <div className="public-appointment-row flex items-center gap-3 rounded-2xl bg-slate-50 p-4">
+                    <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-white text-teal-800 shadow-sm"><MapPin size={20} /></span>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-semibold text-slate-900">Clinics & services</p>
+                      <p className="mt-1 text-xs leading-5 text-slate-600">Explore published clinic and provider details.</p>
+                    </div>
+                    <ArrowUpRight size={17} className="shrink-0 text-teal-800" />
+                  </div>
+                  <div className="public-appointment-row flex items-center gap-3 rounded-2xl bg-slate-50 p-4">
+                    <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-white text-teal-800 shadow-sm"><ShieldCheck size={20} /></span>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-semibold text-slate-900">Your information</p>
+                      <p className="mt-1 text-xs leading-5 text-slate-600">See records made available to your account.</p>
+                    </div>
+                    <BadgeCheck size={17} className="shrink-0 text-teal-700" />
+                  </div>
+                </div>
+                <Link to="/clinics" className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-teal-800 hover:text-teal-950">Explore participating clinics <ArrowRight size={16} /></Link>
               </div>
-              <div aria-hidden="true" className="absolute -bottom-4 -left-4 -z-10 size-28 rounded-3xl bg-cyan-100" />
+              <div className="public-floating-note absolute -bottom-5 -left-3 hidden items-center gap-3 rounded-2xl border border-slate-100 bg-white p-3.5 shadow-lg shadow-slate-900/10 sm:flex">
+                <span className="flex size-10 items-center justify-center rounded-full bg-amber-50 text-amber-700"><Clock3 size={19} /></span>
+                <div><p className="text-xs font-bold text-slate-900">Care that fits your day</p><p className="mt-0.5 text-[11px] text-slate-500">Find schedules that work for you</p></div>
+              </div>
+              <div aria-hidden="true" className="absolute -bottom-6 -right-4 -z-10 size-28 rounded-3xl bg-cyan-100" />
             </div>
+          </div>
+        </section>
+
+        <section className="public-highlights border-y border-slate-100 bg-white px-4 py-7 sm:px-6 lg:px-8">
+          <div className="mx-auto grid max-w-7xl gap-5 sm:grid-cols-3 sm:gap-8">
+            {[
+              [Building2, "Participating clinics", "Explore clinic information and services."],
+              [CalendarCheck2, "Appointment coordination", "Use booking features available to you."],
+              [ShieldCheck, "Role-based access", "Your account permissions guide what you can see."],
+            ].map(([Icon, title, description]) => (
+              <div key={title} className="flex items-center gap-3">
+                <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-teal-50 text-teal-800"><Icon size={19} /></span>
+                <div><p className="text-sm font-semibold text-slate-900">{title}</p><p className="mt-0.5 text-xs leading-5 text-slate-500">{description}</p></div>
+              </div>
+            ))}
           </div>
         </section>
 
@@ -267,7 +330,7 @@ export default function PublicHome({ initialSection = "" }) {
           </div>
         </section>
 
-        <section className="bg-slate-50 px-4 py-20 sm:px-6 lg:px-8">
+        <section id="benefits" className="bg-slate-50 px-4 py-20 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-7xl">
             <div className="max-w-2xl">
               <p className="text-sm font-bold uppercase tracking-[0.16em] text-teal-800">Why use EthioCare</p>
@@ -317,8 +380,8 @@ export default function PublicHome({ initialSection = "" }) {
               <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">Tools supported by the current application.</h2>
               <div>
                 <p className="leading-7 text-teal-50/80">EthioCare currently supports public clinic and doctor discovery, patient accounts, appointment workflows, clinic and doctor administration, and assigned patient health assessments with protected attachment access.</p>
-                <p className="mt-4 leading-7 text-teal-50/80">Dedicated check-in queues, electronic prescriptions, verified lab-result review, longitudinal clinical notes, follow-up task tracking, and live video consultations are not enabled in the current application.</p>
-                <Link to="/clinics" className="mt-6 inline-flex items-center gap-2 rounded-xl bg-white px-4 py-3 text-sm font-semibold text-teal-950 hover:bg-teal-50">Browse clinics <ArrowRight size={16} /></Link>
+                <p className="mt-4 leading-7 text-teal-50/80">Dedicated check-in queues, electronic prescriptions, AI-assisted medical analysis, longitudinal clinical notes, follow-up task tracking, and live video consultations are not enabled in the current application.</p>
+                <Link to="/clinics" className="public-button mt-6 inline-flex items-center gap-2 rounded-xl bg-white px-4 py-3 text-sm font-semibold text-teal-950 hover:bg-teal-50">Browse clinics <ArrowRight size={16} /></Link>
               </div>
             </div>
           </div>
@@ -343,7 +406,7 @@ export default function PublicHome({ initialSection = "" }) {
           </div>
         </section>
 
-        <section className="bg-slate-50 px-4 py-20 sm:px-6 lg:px-8">
+        <section id="trust" className="bg-slate-50 px-4 py-20 sm:px-6 lg:px-8">
           <div className="mx-auto grid max-w-7xl gap-8 lg:grid-cols-2">
             <div>
               <p className="text-sm font-bold uppercase tracking-[0.16em] text-teal-800">Trust & privacy</p>
@@ -389,10 +452,10 @@ export default function PublicHome({ initialSection = "" }) {
         </section>
       </main>
 
-      <footer className="border-t border-slate-200 bg-white px-4 py-10 sm:px-6 lg:px-8">
+      <footer className="public-footer border-t border-slate-200 bg-white px-4 py-10 sm:px-6 lg:px-8">
         <div className="mx-auto grid max-w-7xl gap-8 sm:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr]">
           <div>
-            <Link to="/" className="inline-flex items-center gap-2 font-bold text-slate-950"><HeartPulse className="text-teal-700" size={21} />EthioCare</Link>
+            <Link to="/" className="public-footer-brand inline-flex items-center gap-2 font-bold text-slate-950"><span className="public-brand-mark flex size-9 items-center justify-center rounded-xl bg-teal-700 text-white"><HeartPulse size={19} /></span>{platformSettings?.platform_name || "EthioCare"}</Link>
             <p className="mt-3 max-w-sm text-sm leading-6 text-slate-600">A digital platform for discovering participating clinics and coordinating supported healthcare workflows.</p>
           </div>
           <div>
@@ -407,11 +470,14 @@ export default function PublicHome({ initialSection = "" }) {
             <div className="mt-3 grid gap-2 text-sm text-slate-600">
               <Link className="hover:text-teal-800" to="/login">Login</Link>
               <Link className="hover:text-teal-800" to="/register">Patient registration</Link>
-              <p className="text-xs leading-5 text-slate-500">No support contact, privacy policy, or terms link is configured.</p>
+              {platformSettings?.contact_email && <a className="hover:text-teal-800" href={`mailto:${platformSettings.contact_email}`}>{platformSettings.contact_email}</a>}
+              {platformSettings?.contact_phone && <a className="hover:text-teal-800" href={`tel:${platformSettings.contact_phone}`}>{platformSettings.contact_phone}</a>}
+              {!platformSettings?.contact_email && !platformSettings?.contact_phone && <p className="text-xs leading-5 text-slate-500">No platform support contact is configured.</p>}
+              <p className="text-xs leading-5 text-slate-500">No privacy policy or terms link is configured.</p>
             </div>
           </div>
         </div>
-        <p className="mx-auto mt-8 max-w-7xl border-t border-slate-100 pt-5 text-xs text-slate-500">© {new Date().getFullYear()} EthioCare. Availability depends on participating clinics.</p>
+        <p className="mx-auto mt-8 max-w-7xl border-t border-slate-100 pt-5 text-xs text-slate-500">© {new Date().getFullYear()} {platformSettings?.platform_name || "EthioCare"}. Availability depends on participating clinics.</p>
       </footer>
     </div>
   );

@@ -1,4 +1,5 @@
 const pool = require("../config/db");
+const bcrypt = require("bcryptjs");
 
 const getPagination = (query) => {
   const page = Number(query.page || 1);
@@ -362,6 +363,78 @@ const listUsers = async (req, res) => {
   }
 };
 
+const createManagedUser = async (req, res) => {
+  const { full_name: fullName, email, phone, password, role } = req.body;
+  const clinicId = ["clinic_admin", "receptionist"].includes(role)
+    ? Number(req.body.clinic_id)
+    : null;
+  const client = await pool.connect();
+
+  try {
+    await client.query("BEGIN");
+
+    if (clinicId) {
+      const clinic = await client.query("SELECT id FROM clinics WHERE id = $1 FOR SHARE", [clinicId]);
+      if (!clinic.rowCount) {
+        await client.query("ROLLBACK");
+        return res.status(404).json({ success: false, message: "Selected clinic was not found." });
+      }
+    }
+
+    const passwordHash = await bcrypt.hash(password, 12);
+    const userResult = await client.query(
+      `INSERT INTO users (full_name, email, password_hash, phone, role, is_active, is_verified)
+       VALUES ($1, $2, $3, $4, $5, TRUE, TRUE)
+       RETURNING id, full_name, email, phone, role, is_active, is_verified, created_at`,
+      [fullName.trim(), email.trim().toLowerCase(), passwordHash, phone?.trim() || null, role]
+    );
+    const user = userResult.rows[0];
+
+    if (clinicId) {
+      await client.query(
+        `INSERT INTO clinic_members (clinic_id, user_id, role, is_active)
+         VALUES ($1, $2, $3, TRUE)`,
+        [clinicId, user.id, role]
+      );
+    }
+
+    await writeAuditLog(client, {
+      actorId: req.user.id,
+      action: "admin_user_created",
+      entity: "users",
+      entityId: user.id,
+      ipAddress: req.ip,
+      details: { role, clinic_id: clinicId },
+    });
+
+    await client.query("COMMIT");
+    return res.status(201).json({
+      success: true,
+      message: role === "doctor"
+        ? "Doctor account created. Assign it to a verified clinic to create its doctor profile."
+        : role === "receptionist"
+          ? "Receptionist account created and assigned to the selected clinic."
+          : "Clinic administrator account created and assigned to the selected clinic.",
+      data: { user },
+    });
+  } catch (error) {
+    try {
+      await client.query("ROLLBACK");
+    } catch (rollbackError) {
+      console.error("Create managed user rollback failed:", rollbackError.message);
+    }
+    if (error.code === "23505") {
+      return res.status(409).json({
+        success: false,
+        message: "An account with this email address already exists.",
+      });
+    }
+    return sendDatabaseFailure(error, res, "Unable to create the account.");
+  } finally {
+    client.release();
+  }
+};
+
 const listAppointments = async (req, res) => {
   const { page, limit, offset } = getPagination(req.query);
   const filters = [];
@@ -498,6 +571,7 @@ module.exports = {
   reviewClinic,
   updateClinicStatus,
   listUsers,
+  createManagedUser,
   listAppointments,
   listAuditLogs,
   listNotifications,

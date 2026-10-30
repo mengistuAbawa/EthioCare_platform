@@ -1,4 +1,5 @@
 const pool = require("../config/db");
+const { getPlatformSettings } = require("../services/platformSettingsService");
 
 const localDatePattern = /^\d{4}-\d{2}-\d{2}$/;
 const parseDate = (value) => {
@@ -166,11 +167,34 @@ const createAppointment = async (req, res) => {
   const startsAt = new Date(body.starts_at);
   const reason = typeof body.reason === "string" ? body.reason.trim() : "";
 
+  let settings;
+  try {
+    settings = await getPlatformSettings();
+  } catch (error) {
+    console.error("Appointment settings load error:", error.message);
+    return res.status(503).json({ success: false, message: "Appointment booking is temporarily unavailable." });
+  }
+
+  const now = Date.now();
+  const earliestBookingTime = now + settings.min_booking_lead_hours * 60 * 60 * 1000;
+  const latestBookingTime = now + settings.max_booking_days * 24 * 60 * 60 * 1000;
   if (![patientId, doctorId, serviceId].every((id) => Number.isSafeInteger(id) && id > 0) ||
       typeof body.starts_at !== "string" ||
       !/^\d{4}-\d{2}-\d{2}T.*(?:Z|[+-]\d{2}:\d{2})$/.test(body.starts_at) ||
-      Number.isNaN(startsAt.getTime()) || startsAt <= new Date()) {
+      Number.isNaN(startsAt.getTime())) {
     return res.status(400).json({ success: false, message: "Choose an existing patient, doctor, service, and future appointment time." });
+  }
+  if (startsAt.getTime() < earliestBookingTime) {
+    return res.status(400).json({
+      success: false,
+      message: `Appointments must be booked at least ${settings.min_booking_lead_hours} hours in advance.`,
+    });
+  }
+  if (startsAt.getTime() > latestBookingTime) {
+    return res.status(400).json({
+      success: false,
+      message: `Appointments can only be booked up to ${settings.max_booking_days} days in advance.`,
+    });
   }
   if (reason.length > 1000) return res.status(400).json({ success: false, message: "The appointment reason is too long." });
 
@@ -238,7 +262,8 @@ const createAppointment = async (req, res) => {
     const appointment = created.rows[0];
     await client.query(
       `INSERT INTO notifications (recipient_id, appointment_id, title, message, type)
-       VALUES ($1, $2, 'Appointment requested', $3, 'appointment')`,
+       SELECT $1, $2, 'Appointment requested', $3, 'appointment'
+        WHERE (SELECT notify_appointment_enabled FROM platform_settings WHERE id = 1)`,
       [patientId, appointment.id, `Your appointment request for ${schedule.rows[0].service_name} is pending confirmation.`]
     );
     await client.query(
@@ -275,6 +300,29 @@ const updateAppointmentStatus = async (req, res) => {
   if (!Number.isSafeInteger(appointmentId) || appointmentId <= 0 ||
       !Object.values(transitions).some((statuses) => statuses.includes(nextStatus))) {
     return res.status(400).json({ success: false, message: "Invalid appointment status update." });
+  }
+
+  if (nextStatus === "cancelled") {
+    try {
+      const settings = await getPlatformSettings();
+      if (settings.cancellation_cutoff_hours > 0) {
+        const appointment = await pool.query(
+          "SELECT starts_at FROM appointments WHERE id = $1 AND clinic_id = $2",
+          [appointmentId, req.receptionClinicId]
+        );
+        if (appointment.rowCount &&
+            new Date(appointment.rows[0].starts_at).getTime() - Date.now() <
+              settings.cancellation_cutoff_hours * 60 * 60 * 1000) {
+          return res.status(400).json({
+            success: false,
+            message: `Appointments cannot be cancelled within ${settings.cancellation_cutoff_hours} hours of their start time.`,
+          });
+        }
+      }
+    } catch (error) {
+      console.error("Appointment cancellation settings error:", error.message);
+      return res.status(503).json({ success: false, message: "Appointment cancellation is temporarily unavailable." });
+    }
   }
 
   const client = await pool.connect();

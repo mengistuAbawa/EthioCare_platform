@@ -45,7 +45,7 @@ export default function NotificationBell({ to }) {
         }}
         aria-label={`Notification count unavailable. ${error} Retry loading.`}
         title={`${error} Activate to retry.`}
-        className="flex size-10 items-center justify-center rounded-xl text-rose-700 hover:bg-rose-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-700"
+        className="flex size-11 items-center justify-center rounded-xl text-rose-700 hover:bg-rose-50"
       >
         <BellOff size={19} aria-hidden="true" />
       </button>
@@ -54,7 +54,7 @@ export default function NotificationBell({ to }) {
 
   if (unreadCount === null) {
     return (
-      <div role="status" aria-label="Loading notification count" className="relative flex size-10 items-center justify-center rounded-xl text-slate-500">
+      <div role="status" aria-label="Loading notification count" className="relative flex size-11 items-center justify-center rounded-xl text-text-secondary">
         <Bell size={19} aria-hidden="true" />
         <span aria-hidden="true" className="absolute right-2 top-2 size-2 animate-pulse rounded-full bg-teal-600 motion-reduce:animate-none" />
         <span className="sr-only">Loading notification count.</span>
@@ -78,7 +78,7 @@ export default function NotificationBell({ to }) {
       </span>
     </>
   );
-  const className = "relative flex size-10 items-center justify-center rounded-xl text-slate-600 hover:bg-slate-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700";
+  const className = "relative flex size-11 items-center justify-center rounded-xl text-text-secondary hover:bg-page focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-teal";
 
   return to ? (
     <Link

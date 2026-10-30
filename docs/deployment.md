@@ -8,6 +8,7 @@ This repository is configured for a Render Express API and a Vercel Vite/React f
 - Back up and inspect an existing database; never drop it to make migrations apply.
 - Apply `database/schema.sql` to a new database first, then apply all applicable additive migrations in dependency order. For an existing installation, compare its schema and migration history before running any migration.
 - Apply `database/migrations/add_patient_health_assessments.sql` before `database/migrations/add_clinical_review_and_treatment_plans.sql`.
+- Apply `database/migrations/20261030_platform_settings.sql` to existing databases before deploying System Settings or password-change/registration controls. New databases receive this table from `database/schema.sql`.
 - Validate every migration against a disposable PostgreSQL database and test rollback/recovery before production. No automated migration runner is configured.
 - The database/schema setup has no supported public first-system-admin bootstrap. Provision initial privileged access only through an approved trusted administrative procedure; never seed default credentials.
 - Keep medical document storage in a private, encrypted S3-compatible bucket. Use a host-managed identity or secret store for storage credentials.

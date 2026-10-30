@@ -297,8 +297,12 @@ const submitAssessment = async (assessmentId, patientId) => {
     );
     await client.query(
       `INSERT INTO notifications (recipient_id, title, message, type)
-       VALUES ($1, 'Assessment submitted', 'Your assessment was submitted. Sign in to view its status.', 'general'),
-              ($2, 'Assessment ready for review', 'A patient assessment is ready in your assigned review queue.', 'general')`,
+       SELECT recipient_id, title, message, type
+         FROM (VALUES
+           ($1::bigint, 'Assessment submitted', 'Your assessment was submitted. Sign in to view its status.', 'general'),
+           ($2::bigint, 'Assessment ready for review', 'A patient assessment is ready in your assigned review queue.', 'general')
+         ) AS notification(recipient_id, title, message, type)
+        WHERE (SELECT notify_general_enabled FROM platform_settings WHERE id = 1)`,
       [patientId, doctorUser.rows[0].user_id]
     );
     await client.query("COMMIT");
@@ -379,7 +383,8 @@ const reviewAssessment = async (assessmentId, doctorUserId, reviewNotes, status)
     );
     await client.query(
       `INSERT INTO notifications (recipient_id, title, message, type)
-       VALUES ($1, 'Assessment review updated', 'Your clinician updated the review of an assessment. Sign in to view it.', 'general')`,
+       SELECT $1, 'Assessment review updated', 'Your clinician updated the review of an assessment. Sign in to view it.'
+        WHERE (SELECT notify_general_enabled FROM platform_settings WHERE id = 1)`,
       [assessmentResult.rows[0].patient_id]
     );
     await client.query("COMMIT");
@@ -522,7 +527,8 @@ const approveTreatmentPlan = async (assessmentId, planId, doctorUserId) => {
     );
     await client.query(
       `INSERT INTO notifications (recipient_id, title, message, type)
-       VALUES ($1, 'Doctor-approved care plan available', 'A clinician approved a care plan. Sign in to view it.', 'general')`,
+       SELECT $1, 'Doctor-approved care plan available', 'A clinician approved a care plan. Sign in to view it.'
+        WHERE (SELECT notify_general_enabled FROM platform_settings WHERE id = 1)`,
       [planResult.rows[0].patient_id]
     );
     await client.query("COMMIT");

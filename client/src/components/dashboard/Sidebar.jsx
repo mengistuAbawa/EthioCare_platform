@@ -14,15 +14,15 @@ export default function Sidebar({
   const groups = getDashboardNavigation(role);
 
   return (
-    <div className="flex h-full min-h-0 flex-col bg-white">
-      <div className={`flex h-[76px] shrink-0 items-center border-b border-slate-200 ${collapsed ? "justify-center px-3" : "justify-between px-5"}`}>
+    <div className="flex h-full min-h-0 flex-col bg-surface">
+      <div className={`flex h-[72px] shrink-0 items-center border-b border-border ${collapsed ? "justify-center px-3" : "justify-between px-5"}`}>
         <div className="flex min-w-0 items-center gap-3">
-          <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-teal-700 text-white">
+          <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-brand-teal text-white shadow-sm">
             <HeartPulse size={21} aria-hidden="true" />
           </span>
           {!collapsed && (
             <div className="min-w-0">
-              <p className="truncate text-sm font-bold text-slate-950">
+              <p className="truncate text-sm font-bold text-text-primary">
                 {role === "receptionist"
                   ? "EthioCare"
                   : role === "system_admin"
@@ -33,7 +33,7 @@ export default function Sidebar({
                       ? "EthioCare"
                       : "EthioCare"}
               </p>
-              <p className="truncate text-xs text-slate-500">
+              <p className="truncate text-xs text-text-secondary">
                 {role === "doctor"
                   ? "Doctor Portal"
                   : role === "receptionist"
@@ -47,10 +47,10 @@ export default function Sidebar({
                     : "Care management"}
               </p>
               {role === "doctor" && (
-                <p className="truncate text-[10px] leading-3 text-slate-500">Clinical Care &amp; Patient Follow-up</p>
+                <p className="truncate text-[10px] leading-3 text-text-secondary">Clinical Care &amp; Patient Follow-up</p>
               )}
               {role === "receptionist" && (
-                <p className="truncate text-[10px] leading-3 text-slate-500">Front Desk &amp; Patient Flow</p>
+                <p className="truncate text-[10px] leading-3 text-text-secondary">Front Desk &amp; Patient Flow</p>
               )}
             </div>
           )}
@@ -61,7 +61,7 @@ export default function Sidebar({
             onClick={onToggleCollapse}
             aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
             title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-            className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700"
+            className="min-h-11 min-w-11 rounded-lg p-2 text-text-secondary hover:bg-page hover:text-text-primary"
           >
             {collapsed ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}
           </button>
@@ -90,8 +90,8 @@ export default function Sidebar({
       </nav>
 
       {!collapsed && (
-        <div className="border-t border-slate-200 px-5 py-4">
-          <p className="text-xs leading-5 text-slate-500">
+        <div className="border-t border-border px-5 py-4">
+          <p className="text-xs leading-5 text-text-secondary">
             Secure access to care and clinic services.
           </p>
         </div>

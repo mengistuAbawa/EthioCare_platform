@@ -8,8 +8,9 @@ import LoadingState from "../../components/dashboard/LoadingState";
 import { getMyAssessments } from "../../services/assessmentService";
 import { getUnreadNotificationCount } from "../../services/notificationService";
 import { getMyAppointments } from "../../services/patientAppointmentService";
+import { PageHeader, StatusBadge } from "../../components/ui/Primitives";
 
-const cardClass = "rounded-2xl border border-slate-200 bg-white p-5";
+const cardClass = "ui-card p-5";
 const formatDate = (value) => new Date(value).toLocaleString();
 
 export default function PatientDashboard() {
@@ -70,18 +71,17 @@ export default function PatientDashboard() {
 
   return (
     <div className="space-y-6">
-      <section className={`${cardClass} flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between`}>
-        <div>
-          <p className="text-sm font-semibold uppercase tracking-wide text-teal-800">Patient Portal</p>
-          <h2 className="mt-1 text-2xl font-bold text-slate-950">Welcome, {user?.full_name || "Patient"}</h2>
-          <p className="mt-1 text-sm text-slate-600">Your healthcare information and care tools in one place.</p>
-        </div>
-        <Link
-          to="/patient/assessment/new"
-          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-teal-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-teal-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700"
-        >
-          <ClipboardList size={18} aria-hidden="true" /> Start assessment
-        </Link>
+      <section>
+        <PageHeader
+          as="h2"
+          title={`Welcome, ${user?.full_name || "Patient"}`}
+          description="Your appointments, health assessments, and care information in one place."
+          actions={(
+            <Link to="/patient/assessment/new" className="ui-button ui-button-primary w-full sm:w-auto">
+              <ClipboardList size={18} aria-hidden="true" /> Start assessment
+            </Link>
+          )}
+        />
       </section>
 
       <section aria-label="Patient overview" className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -142,7 +142,9 @@ export default function PatientDashboard() {
                   <span className="block font-semibold text-slate-900">{appointment.service_name}</span>
                   <span className="mt-1 block text-sm text-slate-600">Dr. {appointment.doctor_name} · {appointment.clinic_name}</span>
                 </span>
-                <span className="text-sm text-slate-500">{formatDate(appointment.starts_at)} · {appointment.status}</span>
+                <span className="flex flex-wrap items-center gap-2 text-sm text-slate-500">
+                  {formatDate(appointment.starts_at)} <StatusBadge status={appointment.status} />
+                </span>
               </li>
             ))}
           </ul>
@@ -179,9 +181,8 @@ export default function PatientDashboard() {
                       Dr. {assessment.doctor_name} · {assessment.doctor_specialty}
                     </span>
                   </span>
-                  <span className="text-sm text-slate-500">
-                    <span className="mr-2 capitalize">{assessment.status.replaceAll("_", " ")}</span>
-                    {formatDate(assessment.created_at)}
+                  <span className="flex flex-wrap items-center gap-2 text-sm text-slate-500">
+                    <StatusBadge status={assessment.status} /> {formatDate(assessment.created_at)}
                   </span>
                 </Link>
               </li>

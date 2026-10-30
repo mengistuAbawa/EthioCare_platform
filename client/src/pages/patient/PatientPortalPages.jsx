@@ -3,14 +3,13 @@ import { Link } from "react-router-dom";
 import EmptyState from "../../components/dashboard/EmptyState";
 import ErrorState from "../../components/dashboard/ErrorState";
 import LoadingState from "../../components/dashboard/LoadingState";
+import { Button, Card, FormField, PageHeader, StatusBadge } from "../../components/ui/Primitives";
 import {
   getMyNotifications,
   markAllMyNotificationsRead,
   markMyNotificationRead,
 } from "../../services/notificationService";
 
-const panelClass = "rounded-2xl border border-slate-200 bg-white p-5 sm:p-6";
-const buttonClass = "inline-flex min-h-10 items-center justify-center rounded-xl bg-teal-700 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 disabled:cursor-not-allowed disabled:opacity-60";
 const formatDate = (value) => new Date(value).toLocaleString();
 
 const featureDetails = {
@@ -71,16 +70,15 @@ export function PatientPortalFeaturePage({ feature }) {
   }
 
   return (
-    <section className={panelClass}>
-      <h2 className="text-xl font-bold text-slate-950">{detail.title}</h2>
-      <p className="mt-1 text-sm text-slate-600">{detail.description}</p>
+    <Card as="section">
+      <PageHeader title={detail.title} description={detail.description} className="mb-5" />
       <div className="mt-5 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-950">
         {detail.limitation}
       </div>
-      <Link to={detail.link.to} className={`${buttonClass} mt-5`}>
+      <Link to={detail.link.to} className="ui-button ui-button-primary mt-5">
         {detail.link.label}
       </Link>
-    </section>
+    </Card>
   );
 }
 
@@ -135,26 +133,21 @@ export function PatientNotificationsPage() {
   const unreadExists = notifications.some((notification) => !notification.is_read);
 
   return (
-    <section className={panelClass}>
+    <Card as="section">
       <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h2 className="text-xl font-bold text-slate-950">Notifications</h2>
-          <p className="mt-1 text-sm text-slate-600">Notifications addressed to your signed-in account.</p>
-        </div>
-        <button
-          type="button"
-          className={buttonClass}
-          disabled={updating || !unreadExists}
+        <PageHeader title="Notifications" description="Notifications addressed to your signed-in account." />
+        <Button
+          loading={updating}
+          disabled={!unreadExists}
           onClick={() => updateNotifications(markAllMyNotificationsRead)}
         >
           Mark all notifications read
-        </button>
+        </Button>
       </div>
 
-      <label className="mb-4 block max-w-xs">
-        <span className="sr-only">Filter notifications by read status</span>
+      <FormField id="notification-read-filter" label="Filter by read status" className="mb-4 max-w-xs">
         <select
-          className="min-h-11 w-full rounded-xl border border-slate-300 px-3 text-sm focus:border-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-100"
+          className="ui-control w-full text-sm"
           value={readFilter}
           onChange={(event) => {
             setLoading(true);
@@ -167,7 +160,7 @@ export function PatientNotificationsPage() {
           <option value="false">Unread</option>
           <option value="true">Read</option>
         </select>
-      </label>
+      </FormField>
 
       {error && <ErrorState message={error} onRetry={refresh} className="mb-4" />}
       {loading ? <LoadingState label="Loading notifications..." /> : notifications.length === 0 ? (
@@ -183,9 +176,7 @@ export function PatientNotificationsPage() {
                 <div>
                   <div className="flex flex-wrap items-center gap-2">
                     <h3 className="font-semibold text-slate-950">{notification.title}</h3>
-                    <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium capitalize text-slate-700">
-                      {notification.is_read ? "Read" : "Unread"}
-                    </span>
+                    <StatusBadge status={notification.is_read ? "completed" : "pending"} label={notification.is_read ? "Read" : "Unread"} />
                   </div>
                   <p className="mt-1 whitespace-pre-wrap text-sm text-slate-700">{notification.message}</p>
                   <p className="mt-2 text-xs capitalize text-slate-500">
@@ -193,14 +184,12 @@ export function PatientNotificationsPage() {
                   </p>
                 </div>
                 {!notification.is_read && (
-                  <button
-                    type="button"
-                    className={buttonClass}
-                    disabled={updating}
+                  <Button
+                    loading={updating}
                     onClick={() => updateNotifications(() => markMyNotificationRead(notification.id))}
                   >
                     Mark as read
-                  </button>
+                  </Button>
                 )}
               </div>
             </article>
@@ -209,17 +198,17 @@ export function PatientNotificationsPage() {
             <div className="flex items-center justify-between border-t border-slate-100 pt-4">
               <p className="text-sm text-slate-600">Page {pagination.page} of {pagination.pages}</p>
               <div className="flex gap-2">
-                <button type="button" className={buttonClass} disabled={page <= 1} onClick={() => { setLoading(true); setPage((current) => current - 1); }}>
+                <Button type="button" variant="secondary" disabled={page <= 1} onClick={() => { setLoading(true); setPage((current) => current - 1); }}>
                   Previous
-                </button>
-                <button type="button" className={buttonClass} disabled={page >= pagination.pages} onClick={() => { setLoading(true); setPage((current) => current + 1); }}>
+                </Button>
+                <Button type="button" variant="secondary" disabled={page >= pagination.pages} onClick={() => { setLoading(true); setPage((current) => current + 1); }}>
                   Next
-                </button>
+                </Button>
               </div>
             </div>
           )}
         </div>
       )}
-    </section>
+    </Card>
   );
 }

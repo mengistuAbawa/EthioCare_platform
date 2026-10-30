@@ -14,6 +14,8 @@ const patientAppointmentRoutes = require("./routes/patientAppointmentRoutes");
 const doctorPortalRoutes = require("./routes/doctorPortalRoutes");
 const adminRoutes = require("./routes/adminRoutes");
 const receptionistRoutes = require("./routes/receptionistRoutes");
+const platformSettingsRoutes = require("./routes/platformSettingsRoutes");
+const maintenanceMode = require("./middleware/maintenanceMode");
 const errorHandler = require("./middleware/errorHandler");
 
 const app = express();
@@ -46,6 +48,8 @@ app.use(
   })
 );
 
+app.use("/api", maintenanceMode);
+
 app.get("/", (req, res) => {
   res.json({
     success: true,
@@ -71,6 +75,7 @@ app.get("/api/health", async (req, res) => {
 });
 
 app.use("/api/auth", authRoutes);
+app.use("/api/settings", platformSettingsRoutes);
 app.use("/api/clinics", clinicRoutes);
 app.use("/api/doctors", doctorRoutes);
 app.use("/api/clinics", clinicDoctorRoutes);

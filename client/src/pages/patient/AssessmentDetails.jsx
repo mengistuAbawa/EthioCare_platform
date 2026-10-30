@@ -1,5 +1,8 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
+import ErrorState from "../../components/dashboard/ErrorState";
+import LoadingState from "../../components/dashboard/LoadingState";
+import { Card, PageHeader, StatusBadge } from "../../components/ui/Primitives";
 import AiSummaryPanel from "../../components/assessment/AiSummaryPanel";
 import OcrVerificationPanel from "../../components/assessment/OcrVerificationPanel";
 import {
@@ -52,29 +55,30 @@ export default function AssessmentDetails() {
         <Link to="/patient/assessments" className="font-semibold text-teal-800 hover:underline">
           ← Assessment history
         </Link>
-        {loading && <p className="rounded-xl bg-white p-5">Loading assessment…</p>}
-        {errorMessage && <p role="alert" className="rounded-xl bg-rose-50 p-4 text-rose-800">{errorMessage}</p>}
+        {loading && <LoadingState label="Loading assessment..." />}
+        {errorMessage && <ErrorState message={errorMessage} className="mb-4" />}
         {assessment && (
           <>
-            <header className="rounded-2xl bg-white p-5 shadow-sm">
-              <p className="text-sm capitalize text-teal-800">{assessment.status.replaceAll("_", " ")}</p>
-              <h2 className="mt-1 text-3xl font-bold text-slate-900">{assessment.chief_complaint}</h2>
+            <Card as="header">
+              <StatusBadge status={assessment.status} />
+              <PageHeader
+                title={assessment.chief_complaint}
+                description={`Dr. ${assessment.doctor_name} · ${assessment.doctor_specialty}`}
+                className="mt-2"
+              />
               {assessment.status === "draft" && (
                 <Link
                   to={`/patient/assessment/${assessment.id}/edit`}
-                  className="mt-3 inline-flex rounded-lg bg-teal-700 px-4 py-2 font-semibold text-white"
+                  className="ui-button ui-button-primary mt-3"
                 >
                   Continue editing draft
                 </Link>
               )}
-              <p className="mt-2 text-sm text-slate-600">
-                Dr. {assessment.doctor_name} · {assessment.doctor_specialty}
-              </p>
               <p className="mt-1 text-xs text-slate-500">
                 Created {new Date(assessment.created_at).toLocaleString()}
               </p>
-            </header>
-            <section className="space-y-3 rounded-2xl bg-white p-5">
+            </Card>
+            <section className="ui-card space-y-3 p-5">
               <h2 className="text-lg font-semibold">Patient-reported symptoms</h2>
               {assessment.symptoms?.length
                 ? <ul className="list-disc space-y-1 pl-5 text-slate-700">{assessment.symptoms.map((item, index) => <li key={index}>{item}</li>)}</ul>
@@ -97,7 +101,7 @@ export default function AssessmentDetails() {
               <h3 className="font-semibold">Additional notes</h3>
               <p className="whitespace-pre-wrap text-slate-700">{displayText(assessment.additional_notes)}</p>
             </section>
-            <section className="rounded-2xl bg-white p-5">
+            <section className="ui-card p-5">
               <h2 className="text-lg font-semibold">Lab results</h2>
               {assessment.lab_results?.length ? (
                 <ul className="mt-3 divide-y divide-slate-100">
@@ -132,7 +136,7 @@ export default function AssessmentDetails() {
                 </ul>
               ) : <p className="mt-2 text-slate-600">No results provided.</p>}
             </section>
-            <section className="rounded-2xl bg-white p-5">
+            <section className="ui-card p-5">
               <h2 className="text-lg font-semibold">Attached files</h2>
               <ul className="mt-3 space-y-2">
                 {assessment.files?.map((file) => (
@@ -151,7 +155,7 @@ export default function AssessmentDetails() {
             </section>
             <OcrVerificationPanel status={assessment.ocr_status} />
             <AiSummaryPanel status={assessment.ai_summary_status} />
-            <section className="rounded-2xl bg-white p-5">
+            <section className="ui-card p-5">
               <h2 className="text-lg font-semibold">Clinician-authored review</h2>
               <p className="mt-3 whitespace-pre-wrap text-slate-700">
                 {assessment.review_notes || "Your doctor has not added review notes yet."}
@@ -163,7 +167,7 @@ export default function AssessmentDetails() {
               )}
             </section>
             {treatmentPlan && (
-              <section className="space-y-3 rounded-2xl border border-emerald-200 bg-white p-5">
+              <section className="ui-card space-y-3 border-success/30 p-5">
                 <div>
                   <p className="text-sm font-semibold text-emerald-800">Doctor-approved plan</p>
                   <h2 className="text-xl font-bold text-slate-900">Your care plan</h2>

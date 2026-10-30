@@ -1,7 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
-import { CheckCircle2, CircleUserRound, Plus, Stethoscope, UserRoundX } from "lucide-react";
+import { CircleUserRound, Plus, Stethoscope, UserRoundX } from "lucide-react";
 import { useParams } from "react-router-dom";
 import { useAuth } from "../../context/useAuth";
+import ErrorState from "../../components/dashboard/ErrorState";
+import LoadingState from "../../components/dashboard/LoadingState";
+import { Button, Card, PageHeader, SearchInput, StatusBadge } from "../../components/ui/Primitives";
 import {
   createDoctorProfile,
   deactivateClinicDoctor,
@@ -240,41 +243,34 @@ export default function DoctorManagement() {
   return (
     <div>
       <div className="mx-auto max-w-7xl">
-        <header className="mb-8">
-          <p className="text-sm font-semibold uppercase tracking-wider text-teal-700">Clinic workspace</p>
-          <h2 className="mt-2 text-3xl font-bold text-slate-950">Doctors</h2>
-          <p className="mt-2 text-slate-600">
-            {isManager
-              ? "Manage authorized doctor profiles and services for this clinic."
-              : "Browse doctor information for your clinic."}
-          </p>
-        </header>
+        <PageHeader
+          title="Doctors"
+          description={isManager
+            ? "Manage authorized doctor profiles and services for this clinic."
+            : "Browse doctor information for your clinic."}
+          className="mb-8"
+        />
 
         {error ? (
-          <div className="mb-5 rounded-xl border border-rose-200 bg-rose-50 p-4 text-rose-800" role="alert">
-            {error}
-            <button type="button" className="ml-3 font-semibold underline" onClick={() => { setLoading(true); load(); }}>Retry</button>
-          </div>
+          <ErrorState message={error} onRetry={() => { setLoading(true); load(); }} className="mb-5" />
         ) : null}
         {notice ? <p className="mb-5 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-emerald-800" role="status">{notice}</p> : null}
 
         <div className="grid items-start gap-6 lg:grid-cols-[0.85fr_1.15fr]">
-          <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <Card as="section">
             <div className="flex items-center justify-between gap-3">
               <h2 className="text-xl font-bold text-slate-900">Clinic doctors</h2>
               <span className="rounded-full bg-slate-100 px-3 py-1 text-sm text-slate-700">{doctors.length}</span>
             </div>
-            <label className="sr-only" htmlFor="clinic-doctor-search">Search clinic doctors</label>
-            <input
-              id="clinic-doctor-search"
-              type="search"
+            <SearchInput
+              label="Search clinic doctors"
               value={doctorSearch}
               onChange={(event) => setDoctorSearch(event.target.value)}
               placeholder="Search name or specialty"
-              className="mt-4 w-full rounded-xl border border-slate-300 px-3 py-2.5"
+              className="mt-4"
             />
             {loading ? (
-              <p className="mt-5 text-sm text-slate-500">Loading doctors...</p>
+              <LoadingState label="Loading clinic doctors..." className="mt-4" />
             ) : visibleDoctors.length ? (
               <ul className="mt-4 space-y-3">
                 {visibleDoctors.map((doctor) => (
@@ -298,13 +294,10 @@ export default function DoctorManagement() {
                             <span className="mt-1 block truncate text-xs text-slate-500">{doctor.email}</span>
                           ) : null}
                         </span>
-                        <span className={`rounded-full px-2 py-1 text-xs font-semibold ${
-                          doctor.is_active && doctor.is_available
-                            ? "bg-emerald-100 text-emerald-800"
-                            : "bg-slate-100 text-slate-700"
-                        }`}>
-                          {doctor.is_active ? (doctor.is_available ? "Available" : "Unavailable") : "Inactive"}
-                        </span>
+                        <StatusBadge
+                          status={!doctor.is_active ? "inactive" : doctor.is_available ? "available" : "unavailable"}
+                          label={!doctor.is_active ? "Inactive" : doctor.is_available ? "Available" : "Unavailable"}
+                        />
                       </span>
                     </button>
                   </li>
@@ -315,11 +308,11 @@ export default function DoctorManagement() {
                 {doctorSearch ? "No doctors match this search." : "No doctor profiles are assigned to this clinic yet."}
               </p>
             )}
-          </section>
+          </Card>
 
           <div className="space-y-6">
             {isManager ? (
-              <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+              <Card as="section">
                 <h2 className="flex items-center gap-2 text-xl font-bold text-slate-900">
                   <Plus size={20} className="text-teal-700" /> Link existing doctor account
                 </h2>
@@ -361,13 +354,14 @@ export default function DoctorManagement() {
                     <input required min="0" step="0.01" type="number" name="consultation_fee" value={createForm.consultation_fee} onChange={updateCreateForm} className="mt-1.5 w-full rounded-xl border border-slate-300 px-3 py-2.5" />
                   </label>
                   <div className="flex items-end">
-                    <button
+                    <Button
                       type="submit"
                       disabled={submitting || !candidates.length}
-                      className="w-full rounded-xl bg-teal-700 px-4 py-2.5 font-semibold text-white hover:bg-teal-800 disabled:cursor-not-allowed disabled:opacity-50"
+                      loading={submitting}
+                      className="w-full"
                     >
                       {submitting ? "Saving..." : "Create doctor profile"}
-                    </button>
+                    </Button>
                   </div>
                   {!candidates.length ? (
                     <p className="text-sm text-amber-800 sm:col-span-2">
@@ -375,24 +369,21 @@ export default function DoctorManagement() {
                     </p>
                   ) : null}
                 </form>
-              </section>
+              </Card>
             ) : null}
 
             {selectedDoctor && isManager ? (
               <>
-                <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                <Card as="section">
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
                       <h2 className="text-xl font-bold text-slate-900">{selectedDoctor.name}</h2>
                       <p className="mt-1 text-sm text-slate-600">Professional profile and assignment status</p>
                     </div>
-                    {selectedDoctor.is_profile_approved ? (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-800">
-                        <CheckCircle2 size={14} /> Public profile approved
-                      </span>
-                    ) : (
-                      <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-900">Awaiting review</span>
-                    )}
+                    <StatusBadge
+                      status={selectedDoctor.is_profile_approved ? "approved" : "pending"}
+                      label={selectedDoctor.is_profile_approved ? "Public profile approved" : "Awaiting review"}
+                    />
                   </div>
 
                   <form onSubmit={submitProfile} className="mt-5 grid gap-4 sm:grid-cols-2">
@@ -426,25 +417,25 @@ export default function DoctorManagement() {
                         I reviewed these public profile details
                       </label>
                     ) : null}
-                    <button
+                    <Button
                       type="submit"
-                      disabled={submitting}
-                      className="rounded-xl bg-slate-900 px-4 py-2.5 font-semibold text-white hover:bg-slate-800 disabled:opacity-50"
+                      loading={submitting}
                     >
                       Save profile
-                    </button>
+                    </Button>
                   </form>
-                  <button
+                  <Button
                     type="button"
+                    variant="danger"
                     disabled={submitting || !selectedDoctor.is_active}
                     onClick={removeAssignment}
-                    className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-rose-700 disabled:opacity-50"
+                    className="mt-4"
                   >
                     <UserRoundX size={17} /> Deactivate clinic assignment
-                  </button>
-                </section>
+                  </Button>
+                </Card>
 
-                <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                <Card as="section">
                   <h2 className="flex items-center gap-2 text-xl font-bold text-slate-900">
                     <Stethoscope size={20} className="text-teal-700" /> Clinic services
                   </h2>
@@ -477,18 +468,18 @@ export default function DoctorManagement() {
                     ) : (
                       <p className="text-sm text-slate-600">No clinic services are configured yet.</p>
                     )}
-                    <button type="submit" disabled={submitting || !selectedDoctor.is_active} className="mt-4 rounded-xl border border-slate-300 px-4 py-2 font-semibold text-slate-800 disabled:opacity-50">
+                    <Button type="submit" variant="secondary" disabled={submitting || !selectedDoctor.is_active} loading={submitting} className="mt-4">
                       Save service assignments
-                    </button>
+                    </Button>
                   </form>
-                </section>
+                </Card>
               </>
             ) : selectedDoctor ? (
-              <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+              <Card as="section">
                 <h2 className="text-xl font-bold text-slate-900">{selectedDoctor.name}</h2>
                 <p className="mt-2 text-teal-800">{selectedDoctor.specialty}</p>
                 {selectedDoctor.qualifications ? <p className="mt-4 text-sm text-slate-600">{selectedDoctor.qualifications}</p> : null}
-              </section>
+              </Card>
             ) : (
               <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center text-slate-600">
                 Select a doctor to view {isManager ? "or manage" : ""} their clinic profile.

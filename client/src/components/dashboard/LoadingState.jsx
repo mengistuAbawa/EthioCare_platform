@@ -3,11 +3,11 @@ export default function LoadingState({ label = "Loading...", className = "" }) {
     <div
       role="status"
       aria-live="polite"
-      className={`flex items-center gap-3 text-sm text-slate-600 ${className}`}
+      className={`flex min-h-12 items-center gap-3 text-sm text-text-secondary ${className}`}
     >
       <span
         aria-hidden="true"
-        className="size-4 animate-spin rounded-full border-2 border-slate-300 border-t-teal-700 motion-reduce:animate-none"
+        className="size-4 animate-spin rounded-full border-2 border-border border-t-brand-teal motion-reduce:animate-none"
       />
       <span>{label}</span>
     </div>

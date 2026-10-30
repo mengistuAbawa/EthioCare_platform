@@ -12,6 +12,7 @@ import {
 import EmptyState from "../../components/dashboard/EmptyState";
 import ErrorState from "../../components/dashboard/ErrorState";
 import LoadingState from "../../components/dashboard/LoadingState";
+import { PageHeader, SearchInput, StatusBadge } from "../../components/ui/Primitives";
 import {
   getDoctorAppointments,
   getDoctorDashboard,
@@ -23,8 +24,8 @@ import {
   markDoctorNotificationRead,
 } from "../../services/doctorPortalService";
 
-const cardClass = "rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6";
-const inputClass = "mt-1 min-h-11 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-700/20";
+const cardClass = "ui-card p-5 sm:p-6";
+const inputClass = "ui-control mt-1 w-full text-sm";
 const todayInClinic = () => new Intl.DateTimeFormat("en-CA", { timeZone: "Africa/Addis_Ababa" }).format(new Date());
 const formatDateTime = (value) => new Intl.DateTimeFormat("en-ET", {
   timeZone: "Africa/Addis_Ababa",
@@ -54,7 +55,7 @@ function AppointmentTable({ appointments }) {
     return <EmptyState title="No appointments found" description="No appointments match this date range and filter." />;
   }
   return (
-    <div className="overflow-x-auto">
+    <div className="overflow-x-auto" role="region" aria-label="Appointments, horizontally scrollable table" tabIndex={0}>
       <table className="w-full min-w-[700px] text-left text-sm">
         <thead className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500">
           <tr>
@@ -77,11 +78,7 @@ function AppointmentTable({ appointments }) {
                 <p className="font-medium text-slate-900">{appointment.clinic_name}</p>
                 <p className="mt-1 text-slate-500">{appointment.service_name}</p>
               </td>
-              <td className="px-3 py-4">
-                <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold capitalize text-slate-700">
-                  {appointment.status.replaceAll("_", " ")}
-                </span>
-              </td>
+              <td className="px-3 py-4"><StatusBadge status={appointment.status} /></td>
             </tr>
           ))}
         </tbody>
@@ -201,11 +198,11 @@ export default function DoctorPortalPage({ page = "dashboard" }) {
 
   return (
     <div className="space-y-5">
-      <header className={cardClass}>
-        <p className="text-sm font-semibold text-teal-800">Doctor Portal · Clinical Care &amp; Patient Follow-up</p>
-        <h2 className="mt-1 text-2xl font-bold text-slate-950">{titles[page] || "Doctor workspace"}</h2>
-        <p className="mt-1 text-sm text-slate-600">Information is limited to your active doctor profile and assigned patient relationships.</p>
-      </header>
+      <PageHeader
+        as="h2"
+        title={titles[page] || "Doctor workspace"}
+        description="Clinical workspace · Information is limited to your active doctor profile and assigned patient relationships."
+      />
 
       {(page === "dashboard" || page === "appointments" || page === "schedule") && (
         <div className={`${cardClass} grid gap-3 sm:grid-cols-2`}>
@@ -254,9 +251,7 @@ export default function DoctorPortalPage({ page = "dashboard" }) {
         <section className={cardClass}>
           {page === "appointments" && (
             <div className="mb-4 grid gap-3 sm:grid-cols-2">
-              <label className="text-sm font-semibold text-slate-700">Search patient, clinic, or service
-                <input className={inputClass} value={searchText} onChange={(event) => setSearchText(event.target.value)} />
-              </label>
+              <SearchInput label="Search patient, clinic, or service" className="w-full" value={searchText} onChange={(event) => setSearchText(event.target.value)} />
               <label className="text-sm font-semibold text-slate-700">Status
                 <select className={inputClass} value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
                   <option value="">All statuses</option>
@@ -282,9 +277,7 @@ export default function DoctorPortalPage({ page = "dashboard" }) {
       {!loading && page === "patients" && data && (
         <section className={cardClass}>
           <form className="mb-4 flex flex-wrap items-end gap-3" onSubmit={(event) => { event.preventDefault(); setPageNumber(1); setRefresh((value) => value + 1); }}>
-            <label className="min-w-[220px] flex-1 text-sm font-semibold text-slate-700">Find a patient with an existing care relationship
-              <input className={inputClass} value={searchText} onChange={(event) => setSearchText(event.target.value)} />
-            </label>
+            <SearchInput label="Find a patient with an existing care relationship" placeholder="Search patients…" className="min-w-[220px] flex-1" value={searchText} onChange={(event) => setSearchText(event.target.value)} />
             <button type="submit" className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-teal-700 px-4 font-semibold text-white"><Search size={16} />Search</button>
           </form>
           {!data.patients?.length ? <EmptyState title="No patients found" description="Only patients with an appointment assigned to you are included." /> : (

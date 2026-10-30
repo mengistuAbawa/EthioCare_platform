@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
 import { ArrowLeft, MapPin, Stethoscope } from "lucide-react";
 import { Link, useParams } from "react-router-dom";
+import ErrorState from "../../components/dashboard/ErrorState";
+import LoadingState from "../../components/dashboard/LoadingState";
+import { Card, StatusBadge } from "../../components/ui/Primitives";
 import { getPublicDoctor } from "../../services/doctorService";
 
 export default function DoctorDetails({ portal = false }) {
@@ -23,7 +26,10 @@ export default function DoctorDetails({ portal = false }) {
         }
       })
       .catch((loadError) => {
-        if (active) setError(loadError.response?.data?.message || "Unable to load this doctor profile.");
+        if (active) {
+          setDoctor(null);
+          setError(loadError.response?.data?.message || "Unable to load this doctor profile.");
+        }
       })
       .finally(() => {
         if (active) setLoadedId(id);
@@ -35,27 +41,33 @@ export default function DoctorDetails({ portal = false }) {
   }, [id]);
 
   if (loading) {
-    return <Wrapper className="flex min-h-48 items-center justify-center text-slate-600">Loading doctor profile...</Wrapper>;
+    return (
+      <Wrapper className={portal ? "flex min-h-48 items-center justify-center" : "flex min-h-48 flex-1 items-center justify-center bg-page px-4 py-8"}>
+        <LoadingState label="Loading doctor profile..." />
+      </Wrapper>
+    );
   }
 
   if (error || !doctor) {
     return (
-      <Wrapper className={portal ? "p-6" : "min-h-screen bg-slate-50 p-6"}>
-        <div className="mx-auto max-w-3xl rounded-2xl border border-rose-200 bg-rose-50 p-6 text-rose-800" role="alert">
-          {error || "Doctor profile not found."}
-          <Link to={directoryPath} className="mt-4 block font-semibold underline">Back to doctor directory</Link>
+      <Wrapper className={portal ? "p-6" : "flex-1 bg-page p-6"}>
+        <div className="mx-auto max-w-3xl">
+          <ErrorState
+            message={error || "Doctor profile not found."}
+            action={<Link to={directoryPath} className="ui-button ui-button-secondary"><ArrowLeft size={16} /> Back to doctor directory</Link>}
+          />
         </div>
       </Wrapper>
     );
   }
 
   return (
-    <Wrapper className={portal ? "px-1 py-2" : "min-h-screen bg-slate-50 px-4 py-10 sm:px-6"}>
+    <Wrapper className={portal ? "px-1 py-2" : "flex-1 bg-page px-4 py-10 sm:px-6"}>
       <article className="mx-auto max-w-4xl">
-        <Link to={directoryPath} className="mb-6 inline-flex items-center gap-2 font-semibold text-teal-800">
+        <Link to={directoryPath} className="mb-6 inline-flex min-h-11 items-center gap-2 font-semibold text-teal-800">
           <ArrowLeft size={17} /> Doctor directory
         </Link>
-        <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-9">
+        <Card as="div" className="sm:p-9">
           <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
             <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-teal-50 text-teal-800">
               <Stethoscope size={30} />
@@ -95,9 +107,9 @@ export default function DoctorDetails({ portal = false }) {
             Consultation fee: {doctor.consultation_fee > 0 ? `${doctor.consultation_fee} ETB` : "Contact the clinic"}
           </p>
           <p className="mt-2 text-sm text-slate-600">
-            {doctor.is_available ? "Currently available" : "Currently unavailable"}
+            <StatusBadge status={doctor.is_available ? "available" : "unavailable"} label={doctor.is_available ? "Currently available" : "Currently unavailable"} />
           </p>
-        </div>
+        </Card>
       </article>
     </Wrapper>
   );

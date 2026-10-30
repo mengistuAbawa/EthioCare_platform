@@ -4,6 +4,7 @@ import { Link, useParams } from "react-router-dom";
 import EmptyState from "../../components/dashboard/EmptyState";
 import ErrorState from "../../components/dashboard/ErrorState";
 import LoadingState from "../../components/dashboard/LoadingState";
+import { Card, PageHeader } from "../../components/ui/Primitives";
 import api from "../../services/api";
 
 const clinicTools = {
@@ -65,8 +66,6 @@ const clinicTools = {
   },
 };
 
-const panelClass = "rounded-2xl border border-slate-200 bg-white p-5 sm:p-6";
-
 export default function ClinicAdminToolsPage() {
   const { feature } = useParams();
   const tool = clinicTools[feature];
@@ -96,14 +95,11 @@ export default function ClinicAdminToolsPage() {
   }
 
   return (
-    <div className="space-y-5">
-      <section className={panelClass}>
-        <h2 className="text-xl font-bold text-slate-950">{tool.title}</h2>
-        <p className="mt-1 text-sm text-slate-600">{tool.description}</p>
-      </section>
+    <div>
+      <PageHeader title={tool.title} description={tool.description} className="mb-5" />
 
       {tool.clinicPicker ? (
-        <section className={panelClass}>
+        <Card as="section">
           {tool.dependency && (
             <p className="mb-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
               {tool.dependency}
@@ -128,7 +124,7 @@ export default function ClinicAdminToolsPage() {
           ) : (
             <ul className="grid gap-3 md:grid-cols-2">
               {clinics.map((clinic) => (
-                <li key={clinic.id} className="rounded-xl border border-slate-200 p-4">
+                <li key={clinic.id} className="rounded-xl border border-border p-4">
                   <div className="flex items-start gap-3">
                     <Building2 size={20} aria-hidden="true" className="mt-0.5 shrink-0 text-teal-700" />
                     <div className="min-w-0 flex-1">
@@ -148,11 +144,11 @@ export default function ClinicAdminToolsPage() {
               ))}
             </ul>
           )}
-        </section>
+        </Card>
       ) : (
-        <section className={panelClass}>
+        <Card as="section">
           <EmptyState title="Feature not available yet" description={tool.dependency} />
-        </section>
+        </Card>
       )}
     </div>
   );

@@ -1,4 +1,5 @@
 const pool = require("../config/db");
+const { getPlatformSettings } = require("../services/platformSettingsService");
 
 const serializeClinic = (clinic) => ({
   id: clinic.id,
@@ -202,6 +203,8 @@ const createClinic = async (req, res) => {
   try {
     const { slug, name, contact_email, contact_phone, city, region, address } = req.body;
     const normalizedSlug = String(slug || "").trim().toLowerCase();
+    const settings = await getPlatformSettings();
+    const verificationStatus = settings.clinic_approval_required ? "pending" : "verified";
 
     if (!normalizedSlug || !name || !city || !address) {
       return res.status(400).json({
@@ -229,7 +232,7 @@ const createClinic = async (req, res) => {
 
       const clinicResult = await client.query(
         `INSERT INTO clinics (slug, name, contact_email, contact_phone, city, region, address, verification_status, created_by)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending', $8)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
          RETURNING *`,
         [
           normalizedSlug,
@@ -239,6 +242,7 @@ const createClinic = async (req, res) => {
           String(city).trim(),
           region ? String(region).trim() : null,
           String(address).trim(),
+          verificationStatus,
           req.user.id,
         ]
       );
