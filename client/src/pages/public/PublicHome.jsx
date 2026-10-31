@@ -205,7 +205,7 @@ export default function PublicHome({ initialSection = "" }) {
       })
       .catch(() => {
         setPlatformSettings(null);
-        setPlatformSettingsError("Platform contact details are temporarily unavailable.");
+        setPlatformSettingsError("Platform settings could not be loaded.");
       });
   }, []);
 

@@ -35,7 +35,26 @@ const getPlatformSettings = async ({ refresh = false } = {}) => {
   );
 
   if (!result.rowCount) {
-    throw new Error("Platform settings have not been initialized.");
+    await pool.query(
+      `INSERT INTO platform_settings (id)
+       VALUES (1)
+       ON CONFLICT (id) DO NOTHING`
+    );
+    const initialized = await pool.query(
+      `SELECT platform_name, contact_email, contact_phone,
+              patient_registration_enabled, clinic_approval_required,
+              max_booking_days, min_booking_lead_hours, cancellation_cutoff_hours,
+              notify_appointment_enabled, notify_general_enabled,
+              maintenance_mode, maintenance_message
+         FROM platform_settings
+        WHERE id = 1`
+    );
+    if (!initialized.rowCount) {
+      throw new Error("Platform settings have not been initialized.");
+    }
+    cachedSettings = initialized.rows[0];
+    cachedAt = Date.now();
+    return cachedSettings;
   }
 
   cachedSettings = result.rows[0];

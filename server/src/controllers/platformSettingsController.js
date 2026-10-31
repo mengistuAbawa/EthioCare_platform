@@ -1,5 +1,6 @@
 const pool = require("../config/db");
 const {
+  DEFAULT_SETTINGS,
   getPlatformSettings,
   invalidatePlatformSettings,
 } = require("../services/platformSettingsService");
@@ -20,6 +21,20 @@ const getPublicSettings = async (req, res) => {
     });
   } catch (error) {
     console.error("Public platform settings error:", error.message);
+    if (["42P01", "42703"].includes(error.code)) {
+      return res.json({
+        success: true,
+        data: {
+          platform_name: DEFAULT_SETTINGS.platform_name,
+          contact_email: DEFAULT_SETTINGS.contact_email,
+          contact_phone: DEFAULT_SETTINGS.contact_phone,
+          patient_registration_enabled: DEFAULT_SETTINGS.patient_registration_enabled,
+          maintenance_mode: DEFAULT_SETTINGS.maintenance_mode,
+          maintenance_message: DEFAULT_SETTINGS.maintenance_message,
+        },
+        warning: "Platform settings table is not initialized.",
+      });
+    }
     return res.status(503).json({
       success: false,
       message: "Platform settings are temporarily unavailable.",
