@@ -8,7 +8,7 @@ import LanguageSwitcher from "../../components/ui/LanguageSwitcher";
 import { useLanguage } from "../../i18n/LanguageContext";
 
 export default function Register() {
-  const { language, t } = useLanguage();
+  const { language } = useLanguage();
   const amharic = language === "am";
   const navigate = useNavigate();
   const { register } = useAuth();

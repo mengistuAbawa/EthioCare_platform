@@ -146,9 +146,7 @@ const auditListRules = [
   }),
 ];
 
-const auditLogParamRules = [
-  param("logId").isInt({ min: 1, max: Number.MAX_SAFE_INTEGER }).toInt(),
-];
+const auditLogParamRules = [positiveId("logId")];
 
 module.exports = {
   handleAdminValidationErrors,

@@ -26,6 +26,13 @@ const buttonClass = "ui-button ui-button-primary";
 const formatDate = (value) => value ? new Date(value).toLocaleString() : "—";
 const humanize = (value) => String(value || "").replaceAll("_", " ");
 const messageFrom = (error, fallback) => error.response?.data?.message || fallback;
+const validationMessageFrom = (error, fallback) => {
+  const validationErrors = error.response?.data?.errors;
+  if (Array.isArray(validationErrors) && validationErrors.length) {
+    return validationErrors.map((item) => item.message || `${item.field} is invalid`).join(" ");
+  }
+  return messageFrom(error, fallback);
+};
 
 function PageTitle({ title, description, children }) {
   return <PageHeader title={title} description={description} actions={children} className="mb-6" />;
@@ -700,7 +707,7 @@ export function AuditLogsPage() {
       setLoading(true);
       setReload((current) => current + 1);
     } catch (requestError) {
-      setDeleteError(messageFrom(requestError, "Unable to delete the audit log."));
+      setDeleteError(validationMessageFrom(requestError, "Unable to delete the audit log."));
     } finally {
       setDeleting(false);
     }
