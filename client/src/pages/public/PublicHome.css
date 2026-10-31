@@ -3,6 +3,19 @@
   --public-muted: var(--color-text-secondary);
   --public-teal: var(--color-brand-teal);
   color: var(--public-ink);
+  background-color: var(--color-surface);
+  background-image:
+    linear-gradient(rgb(244 248 250 / 92%), rgb(244 248 250 / 92%)),
+    url("/Hospital.jpg");
+  background-position: center;
+  background-size: cover;
+  background-attachment: fixed;
+}
+
+:root[data-theme="dark"] .public-site {
+  background-image:
+    linear-gradient(rgb(9 24 33 / 88%), rgb(9 24 33 / 94%)),
+    url("/Hospital.jpg");
 }
 
 .public-site ::selection {
@@ -267,6 +280,36 @@
 
 .public-footer a:not(.public-footer-brand) {
   transition: color 150ms ease;
+}
+
+:root[data-theme="dark"] .public-header {
+  border-color: var(--color-border) !important;
+  background: rgb(16 37 47 / 96%) !important;
+}
+
+:root[data-theme="dark"] .public-site .bg-white,
+:root[data-theme="dark"] .public-site .bg-white\/95,
+:root[data-theme="dark"] .public-site .bg-white\/80 {
+  background-color: var(--color-surface) !important;
+}
+
+:root[data-theme="dark"] .public-site .text-slate-950,
+:root[data-theme="dark"] .public-site .text-slate-900,
+:root[data-theme="dark"] .public-site .text-slate-800,
+:root[data-theme="dark"] .public-site .text-slate-700 {
+  color: var(--color-text-primary) !important;
+}
+
+:root[data-theme="dark"] .public-site .text-slate-600,
+:root[data-theme="dark"] .public-site .text-slate-500 {
+  color: var(--color-text-secondary) !important;
+}
+
+:root[data-theme="dark"] .public-site article,
+:root[data-theme="dark"] .public-site ol li,
+:root[data-theme="dark"] .public-care-card {
+  background: var(--color-surface) !important;
+  border-color: var(--color-border) !important;
 }
 
 @media (max-width: 1279px) {

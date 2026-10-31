@@ -22,6 +22,7 @@ import api from "../../services/api";
 import "./PublicHome.css";
 import LanguageSwitcher from "../../components/ui/LanguageSwitcher";
 import { useLanguage } from "../../i18n/LanguageContext";
+import ThemeToggle from "../../components/ui/ThemeToggle";
 
 const publicLinks = [
   ["Home", "home"],
@@ -135,6 +136,7 @@ function PublicNav({ mobileOpen, setMobileOpen, isAuthenticated, platformName })
 
           <div className="public-header-actions hidden shrink-0 items-center gap-2 md:flex">
             <LanguageSwitcher />
+            <ThemeToggle />
             {!isAuthenticated && (
               <>
                 <Link to="/login" className="public-login-link rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-100">{t("signIn")}</Link>
@@ -144,6 +146,7 @@ function PublicNav({ mobileOpen, setMobileOpen, isAuthenticated, platformName })
           </div>
           <div className="flex items-center gap-2 md:hidden">
             <LanguageSwitcher />
+            <ThemeToggle />
           </div>
           <button
             type="button"

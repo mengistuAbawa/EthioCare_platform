@@ -4,6 +4,7 @@ import NotificationBell from "./NotificationBell";
 import UserProfileMenu from "./UserProfileMenu";
 import { IconButton } from "../ui/Primitives";
 import LanguageSwitcher from "../ui/LanguageSwitcher";
+import ThemeToggle from "../ui/ThemeToggle";
 
 const notificationPathByRole = {
   patient: "/patient/notifications",
@@ -43,6 +44,7 @@ export default function DashboardHeader({
         </div>
       </div>
       <div className="flex shrink-0 items-center gap-1 sm:gap-2">
+        <ThemeToggle />
         {user?.role === "patient" && <LanguageSwitcher />}
         {clinicContext && (
           <div

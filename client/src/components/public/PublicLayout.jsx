@@ -1,6 +1,7 @@
 import { Link, Outlet } from "react-router-dom";
 import LanguageSwitcher from "../ui/LanguageSwitcher";
 import { useLanguage } from "../../i18n/LanguageContext";
+import ThemeToggle from "../ui/ThemeToggle";
 
 const publicLinks = [
   { to: "/about", key: "about", fallback: "About" },
@@ -31,6 +32,7 @@ export default function PublicLayout() {
           </nav>
           <div className="flex items-center gap-2">
             <LanguageSwitcher />
+            <ThemeToggle />
             <Link to="/login" className="ui-button ui-button-secondary">{t("signIn")}</Link>
             <Link to="/register" className="ui-button ui-button-primary">{t("createAccount")}</Link>
           </div>

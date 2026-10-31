@@ -23,7 +23,7 @@ function TrendChart({ title, data = [] }) {
             <div key={item.day} className="flex h-full flex-col items-center justify-end gap-1" title={`${displayDate(item.day)}: ${item.count}`}>
               <span className="text-[10px] font-medium text-slate-600">{item.count || ""}</span>
               <div
-                className="w-full min-w-2 rounded-t bg-teal-600"
+                className="dashboard-bar w-full min-w-2 rounded-t bg-teal-600"
                 style={{ height: `${Math.max(4, (item.count / maxValue) * 100)}%` }}
                 aria-hidden="true"
               />
@@ -80,7 +80,7 @@ export function PlatformAnalyticsPage() {
             {statuses.map((status) => (
               <div key={status.status}>
                 <div className="mb-1 flex justify-between text-sm"><span className="capitalize text-slate-700">{status.status.replaceAll("_", " ")}</span><span className="font-semibold text-slate-900">{status.count} ({Math.round(status.count / total * 100)}%)</span></div>
-                <div className="h-2 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full bg-teal-600" style={{ width: `${status.count / total * 100}%` }} /></div>
+                <div className="h-2 overflow-hidden rounded-full bg-slate-100"><div className="dashboard-progress h-full rounded-full bg-teal-600" style={{ width: `${status.count / total * 100}%` }} /></div>
               </div>
             ))}
           </div>
