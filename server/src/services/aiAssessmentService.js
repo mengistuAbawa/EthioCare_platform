@@ -1,5 +1,8 @@
 const pool = require("../config/db");
 
+const AI_REQUEST_TIMEOUT_MS = 30_000;
+const AI_SUMMARY_MAX_LENGTH = 12_000;
+
 const getAiProviderConfig = () => {
   const gatewayToken = process.env.NEON_AI_GATEWAY_TOKEN?.trim();
   const gatewayBaseUrl = process.env.NEON_AI_GATEWAY_BASE_URL?.trim();
@@ -9,7 +12,8 @@ const getAiProviderConfig = () => {
     return {
       apiKey: gatewayToken,
       baseUrl: baseUrl.endsWith("/v1") ? baseUrl : `${baseUrl}/v1`,
-      model: process.env.NEON_AI_GATEWAY_MODEL?.trim() ||
+      model:
+        process.env.NEON_AI_GATEWAY_MODEL?.trim() ||
         process.env.OPENAI_MODEL?.trim() ||
         "gpt-4o-mini",
       provider: "Neon AI Gateway",
@@ -54,41 +58,64 @@ const summarizeAssessment = async (assessmentId) => {
   }
 
   const assessment = result.rows[0];
-  const response = await fetch(`${provider.baseUrl}/chat/completions`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${provider.apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: provider.model,
-      temperature: 0.2,
-      max_tokens: 700,
-      messages: [
-        {
-          role: "system",
-          content:
-            "You produce a concise clinician-support summary of patient-reported health information. " +
-            "Do not diagnose, prescribe, recommend treatment, or claim that information is confirmed. " +
-            "Clearly label uncertainty, urgency, and that clinician verification is required.",
-        },
-        {
-          role: "user",
-          content: JSON.stringify(assessment),
-        },
-      ],
-    }),
-  });
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), AI_REQUEST_TIMEOUT_MS);
+
+  let response;
+  try {
+    response = await fetch(`${provider.baseUrl}/chat/completions`, {
+      method: "POST",
+      headers: {
+        Authorization: "Bearer " + provider.apiKey,
+        "Content-Type": "application/json",
+      },
+      signal: controller.signal,
+      body: JSON.stringify({
+        model: provider.model,
+        temperature: 0.2,
+        max_tokens: 700,
+        messages: [
+          {
+            role: "system",
+            content:
+              "You produce a concise clinician-support summary of patient-reported health information. " +
+              "Do not diagnose, prescribe, recommend treatment, or claim that information is confirmed. " +
+              "Clearly label uncertainty, urgency, and that clinician verification is required.",
+          },
+          {
+            role: "user",
+            content: JSON.stringify(assessment),
+          },
+        ],
+      }),
+    });
+  } catch (error) {
+    if (error.name === "AbortError") {
+      throw new Error(`${provider.provider} request timed out after ${AI_REQUEST_TIMEOUT_MS / 1000} seconds.`);
+    }
+    throw new Error(`${provider.provider} request could not be completed: ${error.message}`);
+  } finally {
+    clearTimeout(timeout);
+  }
 
   if (!response.ok) {
     const providerError = await response.text();
     throw new Error(`${provider.provider} request failed (${response.status}): ${providerError.slice(0, 500)}`);
   }
 
-  const data = await response.json();
+  let data;
+  try {
+    data = await response.json();
+  } catch {
+    throw new Error(`${provider.provider} returned an invalid JSON response.`);
+  }
+
   const summary = data.choices?.[0]?.message?.content?.trim();
   if (!summary) {
     throw new Error(`${provider.provider} returned an empty summary.`);
+  }
+  if (summary.length > AI_SUMMARY_MAX_LENGTH) {
+    throw new Error(`${provider.provider} returned a summary that exceeds the supported size.`);
   }
 
   return {
