@@ -28,7 +28,7 @@ Uploaded medical files are stored within health assessments, not in a separate p
 
 The current application has no email/SMS delivery integration or expiring invitation/password-reset token model. It therefore does not offer invitation acceptance, verification delivery, forgot-password/reset-password, or public clinic applications. The public website explains these limits rather than exposing unusable forms. The existing clinic-admin workflow can submit a clinic for review; System Admin review is handled through the existing administration APIs.
 
-There is no documented secure first-System-Admin bootstrap procedure in the existing application. Production deployment must provision that account through an approved trusted administrative process; no default credentials or public bootstrap endpoint were added.
+Production deployment provisions the first System Admin through the trusted server-shell bootstrap command documented in `docs/deployment.md`. This creates no public bootstrap endpoint or default credentials.
 
 Existing databases must apply `database/migrations/20261030_platform_settings.sql` before the settings page, registration switch, or appointment rules are used. New databases get the settings table and defaults from `database/schema.sql`.
 

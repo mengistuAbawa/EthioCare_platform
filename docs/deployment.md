@@ -51,3 +51,20 @@ Run these checks against staging before any production change:
 7. Review service logs, database backups and restore, HTTPS/CORS, session/JWT policy, retention/deletion, and incident response.
 
 No live Render or Vercel deployment was performed by this repository setup.
+
+## Create the first System Admin after deployment
+
+The application does not provide default credentials or public administrator registration. Create the first administrator through Render Shell after the database migrations are applied:
+
+1. Open the Render dashboard and select the API service.
+2. Open **Shell** for the service.
+3. Run:
+
+```sh
+npm run create:system-admin
+```
+
+4. If no system administrator exists, enter the full name, email address, and a password of at least 12 characters when prompted.
+5. Sign in through the deployed Vercel frontend at the administrator login route.
+
+The bootstrap command refuses to run if any System Admin account already exists, so it cannot be used repeatedly to create additional privileged accounts. The local command `npm run create:test-admins` remains restricted to `development` and `test` environments and must not be used for production.

@@ -10,6 +10,7 @@
     "migrate": "node scripts/migrate.js",
     "verify:phase2": "node scripts/verifyPhase2.js",
     "create:test-admins": "node scripts/createTestAdmins.js",
+    "create:system-admin": "node scripts/createSystemAdmin.js",
     "worker:assessments": "node src/jobs/assessmentProcessingWorker.js"
   },
   "keywords": [],
