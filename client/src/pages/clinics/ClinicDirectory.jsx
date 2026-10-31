@@ -112,12 +112,17 @@ export default function ClinicDirectory({ portal = false }) {
                 <p className="mt-4 line-clamp-3 text-sm text-slate-600">{clinic.address}</p>
 
                 <div className="mt-5 flex items-center justify-between border-t border-slate-100 pt-4">
-                  <span className="text-sm text-text-secondary">Clinic profile</span>
                   <Link
                     to={portal ? `/patient/clinics/${clinic.id}` : `/clinic/${clinic.id}`}
-                    className="ui-button ui-button-primary"
+                    className="ui-button ui-button-secondary"
                   >
                     {t("viewClinic")}
+                  </Link>
+                  <Link
+                    to={`/patient/assessment/new?clinicId=${clinic.id}`}
+                    className="ui-button ui-button-primary"
+                  >
+                    Request Treatment
                   </Link>
                 </div>
               </article>

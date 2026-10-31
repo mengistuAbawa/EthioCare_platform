@@ -1,6 +1,12 @@
 import api from "./api";
 
-export const getPublicAssessmentDoctors = () => api.get("/doctors", { params: { limit: 50 } });
+export const getPublicAssessmentDoctors = (clinicId) =>
+  api.get("/doctors", {
+    params: {
+      limit: 50,
+      ...(clinicId ? { clinic_id: clinicId } : {}),
+    },
+  });
 
 export const createAssessment = (payload) => api.post("/assessments", payload);
 

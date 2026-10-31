@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import {
   createAssessment,
   getAssessment,
@@ -46,6 +46,8 @@ const steps = ["Symptoms", "Medical history", "Files and review"];
 export default function HealthAssessment() {
   const navigate = useNavigate();
   const { assessmentId: routeAssessmentId } = useParams();
+  const [searchParams] = useSearchParams();
+  const selectedClinicId = searchParams.get("clinicId") || "";
   const [doctors, setDoctors] = useState([]);
   const [loadingDoctors, setLoadingDoctors] = useState(true);
   const [loadingDraft, setLoadingDraft] = useState(Boolean(routeAssessmentId));
@@ -64,7 +66,7 @@ export default function HealthAssessment() {
 
   useEffect(() => {
     let active = true;
-    getPublicAssessmentDoctors()
+    getPublicAssessmentDoctors(selectedClinicId)
       .then((response) => {
         if (active) setDoctors(response.data?.data?.doctors || []);
       })
@@ -77,7 +79,7 @@ export default function HealthAssessment() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [selectedClinicId]);
 
   useEffect(() => {
     if (!routeAssessmentId) return undefined;
@@ -215,6 +217,7 @@ export default function HealthAssessment() {
   };
 
   const urgentAnswer = emergencyAnswerKeys.some((key) => form.safety_answers?.[key] === "yes");
+  const selectedClinicName = doctors.find((doctor) => String(doctor.clinic_id) === String(selectedClinicId))?.clinic_name || "";
 
   if (loadingDraft) {
     return <p className="mx-auto max-w-4xl rounded-xl bg-white p-5 text-slate-600">Loading draft…</p>;
@@ -225,9 +228,20 @@ export default function HealthAssessment() {
       <div className="mx-auto max-w-4xl space-y-5">
         <PageHeader
           title={assessmentId ? "Edit assessment draft" : "Health assessment"}
-          description="Share information with the doctor you select."
+          description={selectedClinicName ? `Share health information with ${selectedClinicName}.` : "Share information with the verified clinic and doctor you select."}
           actions={<Link to="/patient/assessments" className="ui-button ui-button-secondary">View assessment history</Link>}
         />
+
+        {selectedClinicId && (
+          <div className="rounded-xl border border-teal-200 bg-teal-50 p-4">
+            <p className="text-sm font-semibold text-teal-950">
+              {selectedClinicName ? `Treatment request for ${selectedClinicName}` : "Treatment request for the selected clinic"}
+            </p>
+            <p className="mt-1 text-sm text-teal-900">
+              Choose an available doctor from this clinic for your treatment request.
+            </p>
+          </div>
+        )}
 
         <div className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950">
           This form is not for emergencies and does not provide a diagnosis. If you may be having a medical emergency, contact local emergency services or seek urgent care.

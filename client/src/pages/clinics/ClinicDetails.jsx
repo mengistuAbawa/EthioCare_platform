@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ArrowLeft, Building2, MapPin, ShieldCheck } from "lucide-react";
+import { ArrowLeft, Building2, MapPin, ShieldCheck, Stethoscope } from "lucide-react";
 import { Link, useParams } from "react-router-dom";
 import ErrorState from "../../components/dashboard/ErrorState";
 import LoadingState from "../../components/dashboard/LoadingState";
@@ -9,29 +9,44 @@ import api from "../../services/api";
 export default function ClinicDetails({ portal = false }) {
   const { id } = useParams();
   const [clinic, setClinic] = useState(null);
+  const [doctors, setDoctors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
+    let active = true;
     const fetchClinic = async () => {
       setLoading(true);
       setError("");
 
       try {
         const response = await api.get(`/clinics/${id}`);
-        setClinic(response.data?.data?.clinic || null);
+        if (active) setClinic(response.data?.data?.clinic || null);
       } catch (fetchError) {
-        setError(fetchError.response?.data?.message || "Unable to load the clinic.");
+        if (active) setError(fetchError.response?.data?.message || "Unable to load the clinic.");
       } finally {
-        setLoading(false);
+        if (active) setLoading(false);
+      }
+
+      try {
+        const doctorsResponse = await api.get("/doctors", {
+          params: { clinic_id: id, limit: 50 },
+        });
+        if (active) setDoctors(doctorsResponse.data?.data?.doctors || []);
+      } catch {
+        if (active) setDoctors([]);
       }
     };
 
     fetchClinic();
+    return () => {
+      active = false;
+    };
   }, [id]);
 
   const Wrapper = portal ? "div" : "main";
   const directoryPath = portal ? "/patient/clinics" : "/clinics";
+  const treatmentPath = `/patient/assessment/new?clinicId=${id}`;
 
   if (loading) {
     return (
@@ -79,7 +94,15 @@ export default function ClinicDetails({ portal = false }) {
               </div>
             </div>
 
-            <StatusBadge status="verified" label={<><ShieldCheck size={16} aria-hidden="true" /> Verified</>} />
+            <div className="flex w-full flex-col gap-3 md:w-auto md:items-end">
+              <StatusBadge status="verified" label={<><ShieldCheck size={16} aria-hidden="true" /> Verified</>} />
+              <Link
+                to={treatmentPath}
+                className="ui-button ui-button-primary min-h-12 w-full px-6 text-center md:w-auto"
+              >
+                Request Treatment
+              </Link>
+            </div>
           </div>
 
           <div className="mt-8 grid gap-6 lg:grid-cols-[1.3fr_0.7fr]">
@@ -113,6 +136,38 @@ export default function ClinicDetails({ portal = false }) {
                 )}
               </div>
             </aside>
+          </div>
+
+          <section className="mt-8 border-t border-slate-200 pt-6">
+            <div className="flex items-center gap-2">
+              <Stethoscope size={20} className="text-teal-700" aria-hidden="true" />
+              <h2 className="text-xl font-bold text-slate-900">Doctors at this clinic</h2>
+            </div>
+            {doctors.length > 0 ? (
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                {doctors.map((doctor) => (
+                  <div key={doctor.id} className="rounded-xl border border-slate-200 bg-white p-4">
+                    <p className="font-semibold text-slate-900">{doctor.name}</p>
+                    <p className="mt-1 text-sm text-slate-600">{doctor.specialty}</p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="mt-3 text-sm text-slate-600">The clinic can assign an available doctor if no doctor is selected.</p>
+            )}
+          </section>
+
+          <div className="mt-8 rounded-2xl border-2 border-teal-700 bg-teal-50 p-5 sm:flex sm:items-center sm:justify-between sm:gap-5">
+            <div>
+              <p className="text-lg font-bold text-slate-950">Ready to share your health information?</p>
+              <p className="mt-1 text-sm text-slate-700">Submit a treatment request securely to {clinic.name}.</p>
+            </div>
+            <Link
+              to={treatmentPath}
+              className="ui-button ui-button-primary mt-4 min-h-12 w-full px-6 text-center sm:mt-0 sm:w-auto"
+            >
+              Request Treatment
+            </Link>
           </div>
         </Card>
       </div>
