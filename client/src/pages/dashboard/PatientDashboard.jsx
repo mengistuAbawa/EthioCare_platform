@@ -8,8 +8,9 @@ import LoadingState from "../../components/dashboard/LoadingState";
 import { getMyAssessments } from "../../services/assessmentService";
 import { getUnreadNotificationCount } from "../../services/notificationService";
 import { getMyAppointments } from "../../services/patientAppointmentService";
-import { PageHeader, StatusBadge } from "../../components/ui/Primitives";
+import { StatusBadge } from "../../components/ui/Primitives";
 import { useLanguage } from "../../i18n/LanguageContext";
+import { DistributionChart } from "../../components/dashboard/DashboardCharts";
 
 const cardClass = "ui-card p-5";
 const formatDate = (value) => new Date(value).toLocaleString();
@@ -74,17 +75,15 @@ export default function PatientDashboard() {
 
   return (
     <div className="space-y-6">
-      <section>
-        <PageHeader
-          as="h2"
-          title={`${amharic ? "እንኳን ደህና መጡ" : "Welcome"}, ${user?.full_name || (amharic ? "ታካሚ" : "Patient")}`}
-          description={amharic ? "ቀጠሮዎችዎ፣ የጤና ግምገማዎችዎ እና የእንክብካቤ መረጃዎ በአንድ ቦታ።" : "Your appointments, health assessments, and care information in one place."}
-          actions={(
-            <Link to="/patient/assessment/new" className="ui-button ui-button-primary w-full sm:w-auto">
-              <ClipboardList size={18} aria-hidden="true" /> {t("startAssessment")}
-            </Link>
-          )}
-        />
+      <section className="dashboard-hero-panel dashboard-hero-coral">
+        <div>
+          <span className="dashboard-kicker"><Stethoscope size={15} /> Patient care</span>
+          <h2>{amharic ? "እንኳን ደህና መጡ" : "Welcome"}, {user?.full_name || (amharic ? "ታካሚ" : "Patient")}</h2>
+          <p>{amharic ? "ቀጠሮዎችዎ፣ የጤና ግምገማዎችዎ እና የእንክብካቤ መረጃዎ በአንድ ቦታ።" : "Your appointments, health assessments, and care information in one place."}</p>
+        </div>
+        <Link to="/patient/assessment/new" className="ui-button ui-button-primary w-full sm:w-auto">
+          <ClipboardList size={18} aria-hidden="true" /> {t("startAssessment")}
+        </Link>
       </section>
 
       <section aria-label="Patient overview" className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -123,6 +122,20 @@ export default function PatientDashboard() {
           <p className="mt-3 text-sm text-slate-600">{t("upcomingAppointments")}</p>
           <p className="mt-1 text-3xl font-bold text-slate-950">{upcomingCount}</p>
         </Link>
+      </section>
+
+      <section className={cardClass}>
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-bold text-slate-950">Assessment progress</h2>
+            <p className="mt-1 text-sm text-slate-600">Current health journey distribution.</p>
+          </div>
+        </div>
+        <DistributionChart data={[
+          { name: "Draft", value: draftCount },
+          { name: "Awaiting review", value: awaitingReviewCount },
+          { name: "Reviewed", value: reviewedCount },
+        ]} />
       </section>
 
       <section className={cardClass}>

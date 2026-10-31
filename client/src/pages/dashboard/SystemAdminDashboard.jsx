@@ -4,13 +4,16 @@ import { getAdminDashboard } from "../../services/systemAdminService";
 import EmptyState from "../../components/dashboard/EmptyState";
 import ErrorState from "../../components/dashboard/ErrorState";
 import LoadingState from "../../components/dashboard/LoadingState";
+import { DistributionChart, TrendAreaChart } from "../../components/dashboard/DashboardCharts";
 
 const cardClass = "ui-card p-5";
-const displayDate = (value) => new Date(value).toLocaleDateString(undefined, { month: "short", day: "numeric" });
 
 function TrendChart({ title, data = [] }) {
-  const maxValue = Math.max(1, ...data.map((item) => item.count));
   const hasData = data.some((item) => item.count > 0);
+  const chartData = data.map((item) => ({
+    label: new Date(item.day).toLocaleDateString(undefined, { weekday: "short" }),
+    count: Number(item.count || 0),
+  }));
 
   return (
     <section className={cardClass}>
@@ -18,20 +21,8 @@ function TrendChart({ title, data = [] }) {
       {!hasData ? (
         <p className="mt-4 text-sm text-slate-500">No records were created in the last 14 days.</p>
       ) : (
-        <div className="mt-5 grid h-36 grid-cols-7 items-end gap-2 sm:grid-cols-14" aria-label={`${title} over the last 14 days`}>
-          {data.map((item) => (
-            <div key={item.day} className="flex h-full flex-col items-center justify-end gap-1" title={`${displayDate(item.day)}: ${item.count}`}>
-              <span className="text-[10px] font-medium text-slate-600">{item.count || ""}</span>
-              <div
-                className="dashboard-bar w-full min-w-2 rounded-t bg-teal-600"
-                style={{ height: `${Math.max(4, (item.count / maxValue) * 100)}%` }}
-                aria-hidden="true"
-              />
-              <time className="text-[9px] text-slate-500" dateTime={item.day}>
-                {new Date(item.day).getDate()}
-              </time>
-            </div>
-          ))}
+        <div className="mt-2" aria-label={`${title} over the last 14 days`}>
+          <TrendAreaChart data={chartData} />
         </div>
       )}
       <p className="mt-3 text-xs text-slate-500">Daily records created · last 14 days</p>
@@ -76,14 +67,10 @@ export function PlatformAnalyticsPage() {
       <section className={cardClass}>
         <h3 className="font-semibold text-slate-900">Appointment status distribution</h3>
         {total === 0 ? <p className="mt-3 text-sm text-slate-500">No appointment records exist yet.</p> : (
-          <div className="mt-4 space-y-3">
-            {statuses.map((status) => (
-              <div key={status.status}>
-                <div className="mb-1 flex justify-between text-sm"><span className="capitalize text-slate-700">{status.status.replaceAll("_", " ")}</span><span className="font-semibold text-slate-900">{status.count} ({Math.round(status.count / total * 100)}%)</span></div>
-                <div className="h-2 overflow-hidden rounded-full bg-slate-100"><div className="dashboard-progress h-full rounded-full bg-teal-600" style={{ width: `${status.count / total * 100}%` }} /></div>
-              </div>
-            ))}
-          </div>
+          <DistributionChart data={statuses.map((status) => ({
+            name: status.status.replaceAll("_", " "),
+            value: Number(status.count),
+          }))} />
         )}
       </section>
       <p className="text-xs text-slate-500">Counts reflect current database records; no forecast or synthetic values are used.</p>
@@ -153,9 +140,10 @@ export default function SystemAdminDashboard() {
           <Link to="/admin/appointments" className="text-sm font-semibold text-teal-800 hover:underline">View appointments</Link>
         </div>
         {data.appointments?.by_status?.length ? (
-          <div className="mt-4 flex flex-wrap gap-2">
-            {data.appointments.by_status.map((item) => <span key={item.status} className="rounded-xl bg-slate-50 px-3 py-2 text-sm capitalize text-slate-700">{item.status.replaceAll("_", " ")} <strong className="ml-1 text-slate-950">{item.count}</strong></span>)}
-          </div>
+          <DistributionChart data={data.appointments.by_status.map((item) => ({
+            name: item.status.replaceAll("_", " "),
+            value: Number(item.count),
+          }))} />
         ) : <p className="mt-3 text-sm text-slate-500">No appointments have been recorded.</p>}
       </section>
 

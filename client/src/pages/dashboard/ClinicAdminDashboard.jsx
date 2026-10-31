@@ -4,7 +4,8 @@ import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "../../context/useAuth";
 import api from "../../services/api";
 import ErrorState from "../../components/dashboard/ErrorState";
-import { Button, Card, FormField, PageHeader, StatusBadge } from "../../components/ui/Primitives";
+import { Button, Card, FormField, StatusBadge } from "../../components/ui/Primitives";
+import { DistributionChart } from "../../components/dashboard/DashboardCharts";
 
 const emptyForm = {
   slug: "",
@@ -106,11 +107,13 @@ export default function ClinicAdminDashboard() {
 
   return (
     <div className="space-y-7">
-      <PageHeader
-        as="h2"
-        title={`Welcome, ${user?.full_name || "Clinic administrator"}`}
-        description="Manage your clinic profile and review your participation status."
-      />
+      <section className="dashboard-hero-panel dashboard-hero-cyan">
+        <div>
+          <span className="dashboard-kicker"><Building2 size={15} /> Clinic administration</span>
+          <h2>Welcome, {user?.full_name || "Clinic administrator"}</h2>
+          <p>Manage your clinic profile and review your participation status.</p>
+        </div>
+      </section>
 
       <section aria-label="Clinic overview" aria-busy={loading} className="grid gap-4 md:grid-cols-3">
           <Card as="article" className="shadow-none">
@@ -139,6 +142,22 @@ export default function ClinicAdminDashboard() {
             </p>
           </Card>
       </section>
+
+      {!loading && !loadError && clinics.length > 0 ? (
+        <section className="ui-card p-5">
+          <h3 className="text-lg font-bold text-text-primary">Clinic verification overview</h3>
+          <DistributionChart data={[
+            {
+              name: "Verified",
+              value: clinics.filter((clinic) => clinic.verification_status === "verified").length,
+            },
+            {
+              name: "Pending",
+              value: clinics.filter((clinic) => clinic.verification_status !== "verified").length,
+            },
+          ]} />
+        </section>
+      ) : null}
 
       <div className="grid gap-5 lg:grid-cols-[1.2fr_0.8fr]">
           <Card id="your-clinics" className="scroll-mt-24">

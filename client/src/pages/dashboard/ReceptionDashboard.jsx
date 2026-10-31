@@ -1,8 +1,9 @@
-import { CalendarCheck2 } from "lucide-react";
+import { Building2, CalendarCheck2, UsersRound } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../../context/useAuth";
 import api from "../../services/api";
+import { Card, PageHeader } from "../../components/ui/Primitives";
 
 export default function ReceptionDashboard() {
   const { user } = useAuth();
@@ -17,23 +18,40 @@ export default function ReceptionDashboard() {
 
   return (
     <div className="space-y-6">
-        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-          <div className="mb-5 inline-flex rounded-xl bg-cyan-100 p-3 text-cyan-700">
-            <CalendarCheck2 size={24} />
-          </div>
-          <p className="text-sm text-slate-500">Signed in as</p>
-          <h2 className="mt-2 text-2xl font-bold text-slate-900">{user?.full_name || "Receptionist"}</h2>
-          <p className="mt-1 text-sm text-slate-500">Role: {user?.role}</p>
+      <section className="dashboard-hero-panel dashboard-hero-cyan">
+        <div>
+          <span className="dashboard-kicker"><CalendarCheck2 size={15} /> Reception workspace</span>
+          <h2>Welcome, {user?.full_name || "Receptionist"}</h2>
+          <p>Coordinate patient flow and access the clinics linked to your reception account.</p>
         </div>
-        <section id="clinic-list" className="scroll-mt-24 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-          <h2 className="text-xl font-bold text-slate-900">Doctors at your clinics</h2>
+        <div className="dashboard-hero-orbit dashboard-hero-orbit-cyan" aria-hidden="true">
+          <span><UsersRound size={28} /></span>
+        </div>
+      </section>
+
+      <section aria-label="Reception overview" className="grid gap-4 sm:grid-cols-2">
+        <Card className="dashboard-action-card dashboard-action-teal">
+          <span className="dashboard-action-icon"><Building2 size={22} /></span>
+          <div><p className="dashboard-card-label">Authorized clinics</p><h3>{clinics.length}</h3></div>
+        </Card>
+        <Card className="dashboard-action-card dashboard-action-blue">
+          <span className="dashboard-action-icon"><CalendarCheck2 size={22} /></span>
+          <div><p className="dashboard-card-label">Front desk role</p><h3>Receptionist</h3></div>
+        </Card>
+      </section>
+
+      <section id="clinic-list" className="scroll-mt-24 ui-card">
+          <PageHeader as="h2" title="Doctors at your clinics" description="Select a clinic to view its doctor roster and supported management actions." />
           {error ? <p className="mt-3 text-sm text-rose-700" role="alert">{error}</p> : null}
           <div className="mt-4 space-y-3">
             {clinics.map((clinic) => (
-              <div key={clinic.id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 p-4">
-                <p className="font-semibold text-slate-900">{clinic.name} · {clinic.city}</p>
-                <Link to={`/clinic/${clinic.id}/doctors`} className="rounded-lg bg-teal-700 px-3 py-2 text-sm font-semibold text-white">
-                  View clinic doctors
+              <div key={clinic.id} className="dashboard-list-row">
+                <div>
+                  <span className="dashboard-list-icon"><Building2 size={18} /></span>
+                  <span><strong>{clinic.name}</strong><small>{clinic.city || "Clinic location not provided"}</small></span>
+                </div>
+                <Link to={`/clinic/${clinic.id}/doctors`} className="ui-button ui-button-secondary">
+                  View doctors
                 </Link>
               </div>
             ))}
