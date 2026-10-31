@@ -339,7 +339,7 @@ export default function AssessmentReview() {
             </section>
 
             <OcrVerificationPanel status={assessment.ocr_status} />
-            <AiSummaryPanel status={assessment.ai_summary_status} />
+            <AiSummaryPanel status={assessment.ai_summary_status} summary={assessment.ai_summary} />
 
             <form onSubmit={handleSaveReview} className="ui-card space-y-4 p-5">
               <h2 className="text-lg font-semibold">Clinician-authored review</h2>

@@ -22,6 +22,12 @@ const processJob = async (job) => {
     `UPDATE patient_health_assessments SET ${column} = $2 WHERE id = $1`,
     [job.assessment_id, status]
   );
+  if (job.job_type === "ai_summary" && result.summary) {
+    await pool.query(
+      "UPDATE patient_health_assessments SET ai_summary = $2 WHERE id = $1",
+      [job.assessment_id, result.summary]
+    );
+  }
 };
 
 const runAssessmentProcessingWorker = async () => {

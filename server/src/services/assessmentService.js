@@ -5,13 +5,14 @@ const {
   deleteAssessmentFile,
   createDownloadUrl,
 } = require("./fileStorageService");
+const { getAiProviderConfig } = require("./aiAssessmentService");
 
 const assessmentColumns = `
   a.id, a.patient_id, a.doctor_id, a.clinic_id, a.chief_complaint, a.symptoms,
   a.medical_history, a.medications, a.allergies, a.lab_results, a.status,
   a.symptom_onset, a.symptom_duration, a.symptom_frequency, a.severity,
   a.symptom_trend, a.previous_treatment, a.additional_notes, a.safety_answers,
-  a.review_notes, a.submitted_at, a.reviewed_at, a.ocr_status,
+  a.review_notes, a.submitted_at, a.reviewed_at, a.ocr_status, a.ai_summary,
   a.ai_summary_status, a.created_at, a.updated_at,
   (SELECT count(*)::int
      FROM treatment_plans approved_plan
@@ -285,11 +286,18 @@ const submitAssessment = async (assessmentId, patientId) => {
         RETURNING id, status, submitted_at`,
       [assessmentId, patientId]
     );
+    const aiJobStatus = getAiProviderConfig() ? "pending" : "not_configured";
     await client.query(
       `INSERT INTO assessment_processing_jobs (assessment_id, job_type, status, completed_at)
-       VALUES ($1, 'ocr', 'not_configured', now()), ($1, 'ai_summary', 'not_configured', now())
+       VALUES ($1, 'ocr', 'not_configured', now()), ($1, 'ai_summary', $2, CASE WHEN $2 = 'pending' THEN NULL ELSE now() END)
        ON CONFLICT (assessment_id, job_type) DO NOTHING`,
-      [assessmentId]
+      [assessmentId, aiJobStatus]
+    );
+    await client.query(
+      `UPDATE patient_health_assessments
+          SET ai_summary_status = $2
+        WHERE id = $1`,
+      [assessmentId, aiJobStatus]
     );
     const doctorUser = await client.query(
       "SELECT user_id FROM doctors WHERE id = $1",

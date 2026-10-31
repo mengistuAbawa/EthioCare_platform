@@ -154,7 +154,7 @@ export default function AssessmentDetails() {
               </ul>
             </section>
             <OcrVerificationPanel status={assessment.ocr_status} />
-            <AiSummaryPanel status={assessment.ai_summary_status} />
+            <AiSummaryPanel status={assessment.ai_summary_status} summary={assessment.ai_summary} />
             <section className="ui-card p-5">
               <h2 className="text-lg font-semibold">Clinician-authored review</h2>
               <p className="mt-3 whitespace-pre-wrap text-slate-700">
