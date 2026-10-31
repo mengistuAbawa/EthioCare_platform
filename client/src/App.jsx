@@ -42,11 +42,13 @@ import {
 } from "./pages/admin/SystemAdminPages";
 import SystemSettingsPage from "./pages/admin/SystemSettingsPage";
 import { PlatformAnalyticsPage } from "./pages/dashboard/SystemAdminDashboard";
+import { LanguageProvider } from "./i18n/LanguageContext";
 
 export default function App() {
   return (
     <BrowserRouter>
-      <AuthProvider>
+      <LanguageProvider>
+        <AuthProvider>
         <Routes>
           <Route path="/" element={<PublicHome />} />
           <Route path="/about" element={<PublicHome initialSection="about" />} />
@@ -362,7 +364,8 @@ export default function App() {
             />
           </Route>
         </Routes>
-      </AuthProvider>
+        </AuthProvider>
+      </LanguageProvider>
     </BrowserRouter>
   );
 }

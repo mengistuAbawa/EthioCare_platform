@@ -74,7 +74,7 @@ const requireClinicAdminAccess = async (req, res, next) => {
   try {
     const membership = await getClinicMembership(req.user.id, clinicId);
 
-    if (!membership) {
+    if (!membership || membership.role !== "clinic_admin") {
       return res.status(403).json({
         success: false,
         message: "You are not authorized to manage this clinic.",
@@ -83,6 +83,7 @@ const requireClinicAdminAccess = async (req, res, next) => {
 
     if (!(await requireOperationalClinic(clinicId, res))) return;
     req.clinicMembership = membership;
+    req.authorizedClinicId = clinicId;
     return next();
   } catch (error) {
     console.error("Clinic admin access check failed:", error.message);
@@ -117,15 +118,16 @@ const requireClinicStaffAccess = async (req, res, next) => {
   try {
     const membership = await getClinicMembership(req.user.id, clinicId);
 
-    if (!membership) {
+    if (!membership || membership.role !== req.user.role) {
       return res.status(403).json({
         success: false,
-        message: "You do not have access to this clinic.",
+        message: "You do not have staff access to this clinic.",
       });
     }
 
     if (!(await requireOperationalClinic(clinicId, res))) return;
     req.clinicMembership = membership;
+    req.authorizedClinicId = clinicId;
     return next();
   } catch (error) {
     console.error("Clinic membership check failed:", error.message);
@@ -171,18 +173,25 @@ const requireClinicOwnerOrAdmin = async (req, res, next) => {
     }
 
     const clinic = clinicResult.rows[0];
-    const isOwner = Number(clinic.created_by) === Number(req.user.id);
-    const membership = await getClinicMembership(req.user.id, clinicId);
-
-    if (!isOwner && !membership) {
+    if (req.user.role !== "clinic_admin") {
       return res.status(403).json({
         success: false,
-        message: "You are not authorized to access this clinic.",
+        message: "Clinic administrator access is required.",
+      });
+    }
+    const membership = await getClinicMembership(req.user.id, clinicId);
+
+    if (!membership || membership.role !== "clinic_admin") {
+      return res.status(403).json({
+        success: false,
+        message: "You are not authorized to manage this clinic.",
       });
     }
 
     if (!(await requireOperationalClinic(clinicId, res))) return;
     req.clinic = clinic;
+    req.clinicMembership = membership;
+    req.authorizedClinicId = clinicId;
     return next();
   } catch (error) {
     console.error("Clinic ownership check failed:", error.message);

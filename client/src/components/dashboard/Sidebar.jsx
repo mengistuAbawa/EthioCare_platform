@@ -2,6 +2,7 @@ import { HeartPulse, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { getDashboardNavigation } from "../../config/dashboardNavigation";
 import EmptyState from "./EmptyState";
 import SidebarGroup from "./SidebarGroup";
+import { useLanguage } from "../../i18n/LanguageContext";
 
 export default function Sidebar({
   role,
@@ -12,6 +13,37 @@ export default function Sidebar({
   onToggleCollapse,
 }) {
   const groups = getDashboardNavigation(role);
+  const { language } = useLanguage();
+  const patientTranslations = {
+    Overview: "አጠቃላይ እይታ",
+    "Discover Healthcare": "የጤና አገልግሎት ያግኙ",
+    "Find Clinics": "ክሊኒኮችን ፈልግ",
+    "Find Doctors": "ዶክተሮችን ፈልግ",
+    "Browse Services": "አገልግሎቶችን ያስሱ",
+    Appointments: "ቀጠሮዎች",
+    "Book Appointment": "ቀጠሮ ያስይዙ",
+    "My Appointments": "ቀጠሮዎቼ",
+    "Appointment History": "የቀጠሮ ታሪክ",
+    "My Health": "ጤናዬ",
+    "Health Assessment": "የጤና ግምገማ",
+    "My Medical Images & Reports": "የሕክምና ምስሎቼ እና ሪፖርቶቼ",
+    "My Lab Results": "የላቦራቶሪ ውጤቶቼ",
+    "My Medical Records": "የሕክምና መዝገቦቼ",
+    "Online Consultation": "የመስመር ላይ ምክክር",
+    Communication: "ግንኙነት",
+    Notifications: "ማሳወቂያዎች",
+    Account: "መለያ",
+    "Health Profile": "የጤና መገለጫ",
+    "My Profile": "የእኔ መገለጫ",
+    "Settings & Privacy": "ቅንብሮች እና ግላዊነት",
+  };
+  const translatedGroups = role === "patient" && language === "am"
+    ? groups.map((group) => ({
+        ...group,
+        label: patientTranslations[group.label] || group.label,
+        items: group.items.map((item) => ({ ...item, label: patientTranslations[item.label] || item.label })),
+      }))
+    : groups;
 
   return (
     <div className="flex h-full min-h-0 flex-col bg-surface">
@@ -70,7 +102,7 @@ export default function Sidebar({
 
       <nav aria-label="Dashboard navigation" className="min-h-0 flex-1 overflow-y-auto px-3 py-5">
         {groups.length ? (
-          groups.map((group) => (
+          translatedGroups.map((group) => (
             <SidebarGroup
               key={group.label}
               group={group}

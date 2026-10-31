@@ -1,16 +1,19 @@
 import { Link, Outlet } from "react-router-dom";
+import LanguageSwitcher from "../ui/LanguageSwitcher";
+import { useLanguage } from "../../i18n/LanguageContext";
 
 const publicLinks = [
-  { to: "/about", label: "About" },
-  { to: "/how-it-works", label: "How it works" },
-  { to: "/services", label: "Services" },
-  { to: "/clinics", label: "Clinics" },
-  { to: "/doctors", label: "Doctors" },
-  { to: "/help", label: "Help" },
-  { to: "/contact", label: "Contact" },
+  { to: "/about", key: "about", fallback: "About" },
+  { to: "/how-it-works", key: "howItWorks", fallback: "How it works" },
+  { to: "/services", key: "services", fallback: "Services" },
+  { to: "/clinics", key: "clinics", fallback: "Clinics" },
+  { to: "/doctors", key: "doctors", fallback: "Doctors" },
+  { to: "/help", key: "help", fallback: "Help" },
+  { to: "/contact", key: "contact", fallback: "Contact" },
 ];
 
 export default function PublicLayout() {
+  const { t } = useLanguage();
   return (
     <div className="flex min-h-screen flex-col bg-page">
       <a href="#main-content" className="ui-skip-link">Skip to main content</a>
@@ -22,13 +25,14 @@ export default function PublicLayout() {
           <nav aria-label="Public navigation" className="order-3 flex w-full flex-wrap gap-x-4 gap-y-2 sm:order-none sm:w-auto sm:gap-x-5">
             {publicLinks.map((item) => (
               <Link key={item.to} to={item.to} className="min-h-10 inline-flex items-center text-sm font-medium text-text-secondary hover:text-brand-teal">
-                {item.label}
+                {t(item.key) === item.key ? item.fallback : t(item.key)}
               </Link>
             ))}
           </nav>
           <div className="flex items-center gap-2">
-            <Link to="/login" className="ui-button ui-button-secondary">Sign in</Link>
-            <Link to="/register" className="ui-button ui-button-primary">Create account</Link>
+            <LanguageSwitcher />
+            <Link to="/login" className="ui-button ui-button-secondary">{t("signIn")}</Link>
+            <Link to="/register" className="ui-button ui-button-primary">{t("createAccount")}</Link>
           </div>
         </div>
       </header>

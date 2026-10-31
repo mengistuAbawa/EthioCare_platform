@@ -7,7 +7,7 @@ const {
 } = require("./fileStorageService");
 
 const assessmentColumns = `
-  a.id, a.patient_id, a.doctor_id, a.chief_complaint, a.symptoms,
+  a.id, a.patient_id, a.doctor_id, a.clinic_id, a.chief_complaint, a.symptoms,
   a.medical_history, a.medications, a.allergies, a.lab_results, a.status,
   a.symptom_onset, a.symptom_duration, a.symptom_frequency, a.severity,
   a.symptom_trend, a.previous_treatment, a.additional_notes, a.safety_answers,
@@ -90,7 +90,7 @@ const createAssessment = async (patientId, input) => {
         lab_results, symptom_onset, symptom_duration, symptom_frequency, severity, symptom_trend,
         previous_treatment, additional_notes, safety_answers)
      VALUES ($1, $2, $3, $4::jsonb, $5, $6, $7, $8::jsonb, $9, $10, $11, $12, $13, $14, $15, $16::jsonb)
-     RETURNING id, patient_id, doctor_id, status, created_at`,
+     RETURNING id, patient_id, doctor_id, clinic_id, status, created_at`,
     [
       patientId,
       doctorResult.rows[0].id,

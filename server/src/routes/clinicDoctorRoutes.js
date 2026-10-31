@@ -5,6 +5,7 @@ const {
   requireClinicAdminAccess,
   requireClinicStaffAccess,
 } = require("../middleware/clinicAccess");
+const { requireClinicPermission } = require("../middleware/requireClinicPermission");
 const {
   getClinicDoctorCandidates,
   createDoctorProfile,
@@ -32,6 +33,7 @@ router.get(
   authenticate,
   authorize("clinic_admin"),
   requireClinicAdminAccess,
+  requireClinicPermission("doctors.manage"),
   handleDoctorValidationErrors,
   getClinicDoctorCandidates
 );
@@ -40,6 +42,7 @@ router.post(
   authenticate,
   authorize("clinic_admin"),
   requireClinicAdminAccess,
+  requireClinicPermission("doctors.manage"),
   createDoctorRules,
   handleDoctorValidationErrors,
   createDoctorProfile
@@ -49,6 +52,7 @@ router.get(
   authenticate,
   clinicStaff,
   requireClinicStaffAccess,
+  requireClinicPermission("doctors.read"),
   handleDoctorValidationErrors,
   getClinicDoctors
 );
@@ -57,6 +61,7 @@ router.get(
   authenticate,
   clinicStaff,
   requireClinicStaffAccess,
+  requireClinicPermission("doctors.read"),
   clinicDoctorParamRules,
   handleDoctorValidationErrors,
   getDoctorServices
@@ -66,6 +71,7 @@ router.put(
   authenticate,
   authorize("clinic_admin"),
   requireClinicAdminAccess,
+  requireClinicPermission("doctors.manage"),
   updateDoctorServicesRules,
   handleDoctorValidationErrors,
   updateDoctorServices
@@ -75,6 +81,7 @@ router.get(
   authenticate,
   clinicStaff,
   requireClinicStaffAccess,
+  requireClinicPermission("doctors.read"),
   clinicDoctorParamRules,
   handleDoctorValidationErrors,
   getDoctorById
@@ -84,6 +91,7 @@ router.patch(
   authenticate,
   clinicManagers,
   requireClinicAdminAccess,
+  requireClinicPermission("doctors.manage"),
   updateDoctorRules,
   handleDoctorValidationErrors,
   updateDoctorProfile
@@ -93,6 +101,7 @@ router.delete(
   authenticate,
   authorize("clinic_admin"),
   requireClinicAdminAccess,
+  requireClinicPermission("doctors.manage"),
   clinicDoctorParamRules,
   handleDoctorValidationErrors,
   removeDoctorFromClinic

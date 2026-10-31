@@ -3,7 +3,7 @@ const pool = require("../config/db");
 const requireOperationalDoctorClinic = async (req, res, next) => {
   try {
     const result = await pool.query(
-      `SELECT d.id
+      `SELECT d.id, d.clinic_id
          FROM doctors d
          JOIN clinics c ON c.id = d.clinic_id
         WHERE d.user_id = $1
@@ -21,6 +21,7 @@ const requireOperationalDoctorClinic = async (req, res, next) => {
       });
     }
     req.doctorProfileId = result.rows[0].id;
+    req.authorizedClinicId = result.rows[0].clinic_id;
     return next();
   } catch (error) {
     console.error("Doctor clinic access check failed:", error.message);

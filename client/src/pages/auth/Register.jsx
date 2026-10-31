@@ -4,8 +4,12 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/useAuth";
 import { Button, IconButton } from "../../components/ui/Primitives";
 import api from "../../services/api";
+import LanguageSwitcher from "../../components/ui/LanguageSwitcher";
+import { useLanguage } from "../../i18n/LanguageContext";
 
 export default function Register() {
+  const { language, t } = useLanguage();
+  const amharic = language === "am";
   const navigate = useNavigate();
   const { register } = useAuth();
   const [form, setForm] = useState({
@@ -94,6 +98,7 @@ export default function Register() {
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-slate-100 px-4 py-12">
+      <div className="fixed right-4 top-4 z-40"><LanguageSwitcher /></div>
       <div className="w-full max-w-2xl rounded-3xl border border-slate-200 bg-white p-6 shadow-xl sm:p-10">
         <div className="mb-8 flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
@@ -101,8 +106,8 @@ export default function Register() {
               <HeartPulse className="h-6 w-6" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-slate-900">Create patient account</h1>
-              <p className="text-sm text-slate-500">Public registration is for patients only.</p>
+              <h1 className="text-2xl font-bold text-slate-900">{amharic ? "የታካሚ መለያ ይፍጠሩ" : "Create patient account"}</h1>
+              <p className="text-sm text-slate-500">{amharic ? "ይህ ምዝገባ ለታካሚዎች ብቻ ነው።" : "Public registration is for patients only."}</p>
             </div>
           </div>
         </div>
@@ -126,7 +131,7 @@ export default function Register() {
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
             <label htmlFor="full_name" className="mb-2 block text-sm font-medium text-slate-700">
-              Full name <span className="text-rose-700" aria-hidden="true">*</span>
+              {amharic ? "ሙሉ ስም" : "Full name"} <span className="text-rose-700" aria-hidden="true">*</span>
             </label>
             <div className="relative">
               <UserRound className="pointer-events-none absolute left-3 top-3.5 h-5 w-5 text-slate-400" />
@@ -148,7 +153,7 @@ export default function Register() {
 
           <div>
             <label htmlFor="email" className="mb-2 block text-sm font-medium text-slate-700">
-              Email address <span className="text-rose-700" aria-hidden="true">*</span>
+              {amharic ? "ኢሜይል አድራሻ" : "Email address"} <span className="text-rose-700" aria-hidden="true">*</span>
             </label>
             <div className="relative">
               <Mail className="pointer-events-none absolute left-3 top-3.5 h-5 w-5 text-slate-400" />
@@ -171,7 +176,7 @@ export default function Register() {
 
           <div>
             <label htmlFor="phone" className="mb-2 block text-sm font-medium text-slate-700">
-              Phone number (optional)
+              {amharic ? "ስልክ ቁጥር (አማራጭ)" : "Phone number (optional)"}
             </label>
             <input
               id="phone"
@@ -188,7 +193,7 @@ export default function Register() {
           <div className="grid gap-5 md:grid-cols-2">
             <div>
               <label htmlFor="password" className="mb-2 block text-sm font-medium text-slate-700">
-                Password <span className="text-rose-700" aria-hidden="true">*</span>
+                {amharic ? "የይለፍ ቃል" : "Password"} <span className="text-rose-700" aria-hidden="true">*</span>
               </label>
               <div className="relative">
                 <LockKeyhole className="pointer-events-none absolute left-3 top-3.5 h-5 w-5 text-slate-400" />
@@ -217,7 +222,7 @@ export default function Register() {
 
             <div>
               <label htmlFor="confirmPassword" className="mb-2 block text-sm font-medium text-slate-700">
-                Confirm password <span className="text-rose-700" aria-hidden="true">*</span>
+                {amharic ? "የይለፍ ቃል ያረጋግጡ" : "Confirm password"} <span className="text-rose-700" aria-hidden="true">*</span>
               </label>
               <div className="relative">
                 <LockKeyhole className="pointer-events-none absolute left-3 top-3.5 h-5 w-5 text-slate-400" />
@@ -265,12 +270,12 @@ export default function Register() {
             disabled={Boolean(settingsError || !publicSettings || !publicSettings.patient_registration_enabled || publicSettings.maintenance_mode)}
             className="w-full"
           >
-            {loading ? "Creating account..." : "Create patient account"}
+            {loading ? (amharic ? "መለያ በመፍጠር ላይ..." : "Creating account...") : (amharic ? "የታካሚ መለያ ይፍጠሩ" : "Create patient account")}
           </Button>
         </form>
 
         <p className="mt-6 text-center text-sm text-slate-600">
-          Already have an account?{" "}
+          {amharic ? "መለያ አለዎት?" : "Already have an account?"}{" "}
           <Link to="/login" className="font-semibold text-teal-700 hover:text-teal-800">
             Sign in
           </Link>

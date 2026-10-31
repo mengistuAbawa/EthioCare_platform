@@ -6,8 +6,11 @@ import ErrorState from "../../components/dashboard/ErrorState";
 import LoadingState from "../../components/dashboard/LoadingState";
 import { Button, FormField, PageHeader, SearchInput, StatusBadge } from "../../components/ui/Primitives";
 import api from "../../services/api";
+import { useLanguage } from "../../i18n/LanguageContext";
 
 export default function ClinicDirectory({ portal = false }) {
+  const { language, t } = useLanguage();
+  const amharic = language === "am";
   const [clinics, setClinics] = useState([]);
   const [search, setSearch] = useState("");
   const [city, setCity] = useState("");
@@ -54,20 +57,20 @@ export default function ClinicDirectory({ portal = false }) {
       <div className="mx-auto max-w-6xl">
         <PageHeader
           as={portal ? "h2" : "h1"}
-          title="Discover care providers"
-          description="Browse clinics available through EthioCare."
-          actions={portal ? <Link to="/patient/dashboard" className="ui-button ui-button-secondary">Dashboard</Link> : null}
+          title={t("discoverCare")}
+          description={t("discoverCareDescription")}
+          actions={portal ? <Link to="/patient/dashboard" className="ui-button ui-button-secondary">{t("dashboard")}</Link> : null}
           className="mb-8"
         />
 
         <section aria-label="Filter clinics" className="ui-card mb-8 grid gap-4 p-4 md:grid-cols-[1.5fr_1fr_auto]">
           <SearchInput
-            label="Search clinics"
+            label={t("searchClinics")}
             value={search}
             onChange={(event) => { setPage(1); setSearch(event.target.value); }}
             placeholder="Search by clinic or specialization"
           />
-          <FormField id="clinic-city-filter" label="City" className="mb-0">
+          <FormField id="clinic-city-filter" label={t("city")} className="mb-0">
             <input
               value={city}
               onChange={(event) => { setPage(1); setCity(event.target.value); }}
@@ -79,16 +82,16 @@ export default function ClinicDirectory({ portal = false }) {
             variant="secondary"
             onClick={() => { setSearch(""); setCity(""); setPage(1); }}
           >
-            Reset filters
+            {t("resetFilters")}
           </Button>
         </section>
 
         {loading ? (
-          <LoadingState label="Loading clinics..." />
+          <LoadingState label={t("loadingClinics")} />
         ) : error ? (
           <ErrorState message={error} onRetry={() => { setLoading(true); setAttempt((current) => current + 1); }} />
         ) : clinics.length === 0 ? (
-          <EmptyState title="No clinics found" description="No clinics match the current search. Adjust or clear your filters and try again." />
+          <EmptyState title={t("noClinics")} description={amharic ? "ምንም ክሊኒክ አልተገኘም። ፍለጋውን ያስተካክሉ ወይም ያጽዱ።" : "No clinics match the current search. Adjust or clear your filters and try again."} />
         ) : (
           <section className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
             {clinics.map((clinic) => (
@@ -97,7 +100,7 @@ export default function ClinicDirectory({ portal = false }) {
                   <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-teal-100 text-teal-700">
                     <Building2 size={22} />
                   </div>
-                  <StatusBadge status="verified" label={<><ShieldCheck size={12} aria-hidden="true" /> Verified</>} />
+                  <StatusBadge status="verified" label={<><ShieldCheck size={12} aria-hidden="true" /> {t("verified")}</>} />
                 </div>
 
                 <h2 className="text-xl font-bold text-slate-900">{clinic.name}</h2>
@@ -114,7 +117,7 @@ export default function ClinicDirectory({ portal = false }) {
                     to={portal ? `/patient/clinics/${clinic.id}` : `/clinic/${clinic.id}`}
                     className="ui-button ui-button-primary"
                   >
-                    View clinic
+                    {t("viewClinic")}
                   </Link>
                 </div>
               </article>
@@ -129,7 +132,7 @@ export default function ClinicDirectory({ portal = false }) {
               disabled={page <= 1}
               onClick={() => { setLoading(true); setPage((current) => current - 1); }}
             >
-              Previous
+              {t("previous")}
             </Button>
             <span className="text-sm text-slate-600">Page {page} of {pagination.totalPages}</span>
             <Button
@@ -138,7 +141,7 @@ export default function ClinicDirectory({ portal = false }) {
               disabled={page >= pagination.totalPages}
               onClick={() => { setLoading(true); setPage((current) => current + 1); }}
             >
-              Next
+              {t("next")}
             </Button>
           </nav>
         )}

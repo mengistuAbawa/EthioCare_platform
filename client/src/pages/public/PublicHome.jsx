@@ -20,6 +20,8 @@ import { Link } from "react-router-dom";
 import { useAuth } from "../../context/useAuth";
 import api from "../../services/api";
 import "./PublicHome.css";
+import LanguageSwitcher from "../../components/ui/LanguageSwitcher";
+import { useLanguage } from "../../i18n/LanguageContext";
 
 const publicLinks = [
   ["Home", "home"],
@@ -115,6 +117,8 @@ const faqs = [
 ];
 
 function PublicNav({ mobileOpen, setMobileOpen, isAuthenticated, platformName }) {
+  const { language, t } = useLanguage();
+  const amharic = language === "am";
   const closeMenu = () => setMobileOpen(false);
 
   return (
@@ -130,14 +134,17 @@ function PublicNav({ mobileOpen, setMobileOpen, isAuthenticated, platformName })
           </Link>
 
           <div className="public-header-actions hidden shrink-0 items-center gap-2 md:flex">
+            <LanguageSwitcher />
             {!isAuthenticated && (
               <>
-                <Link to="/login" className="public-login-link rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-100">Sign in</Link>
-                <Link to="/register" className="public-button public-button-primary rounded-xl bg-teal-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-teal-800">Create patient account</Link>
+                <Link to="/login" className="public-login-link rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-100">{t("signIn")}</Link>
+                <Link to="/register" className="public-button public-button-primary rounded-xl bg-teal-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-teal-800">{t("register")}</Link>
               </>
             )}
           </div>
-
+          <div className="flex items-center gap-2 md:hidden">
+            <LanguageSwitcher />
+          </div>
           <button
             type="button"
             className="flex size-11 items-center justify-center rounded-xl text-slate-700 hover:bg-slate-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700"
@@ -159,7 +166,13 @@ function PublicNav({ mobileOpen, setMobileOpen, isAuthenticated, platformName })
               <button type="button" onClick={closeMenu} className="rounded-lg p-2 text-slate-600 hover:bg-slate-100" aria-label="Close navigation"><X size={20} /></button>
             </div>
             {publicLinks.map(([label, section]) => (
-              <a key={section} href={`#${section}`} onClick={closeMenu} className="rounded-lg px-3 py-3 text-sm font-medium text-slate-700 hover:bg-teal-50 hover:text-teal-900">{label}</a>
+              <a key={section} href={`#${section}`} onClick={closeMenu} className="rounded-lg px-3 py-3 text-sm font-medium text-slate-700 hover:bg-teal-50 hover:text-teal-900">
+                {amharic ? ({
+                  home: "መነሻ", about: "ስለ እኛ", "how-it-works": "እንዴት ይሰራል",
+                  services: "አገልግሎቶች", "for-patients": "ለታካሚዎች",
+                  faq: "ጥያቄዎች", contact: "አድራሻ",
+                }[section] || label) : label}
+              </a>
             ))}
             <div className="mt-4 grid grid-cols-2 gap-2 border-t border-slate-200 pt-4">
               {!isAuthenticated && (
@@ -178,6 +191,8 @@ function PublicNav({ mobileOpen, setMobileOpen, isAuthenticated, platformName })
 
 export default function PublicHome({ initialSection = "" }) {
   const { isAuthenticated, loading } = useAuth();
+  const { language, t } = useLanguage();
+  const amharic = language === "am";
   const [mobileOpen, setMobileOpen] = useState(false);
   const [platformSettings, setPlatformSettings] = useState(null);
   const [platformSettingsError, setPlatformSettingsError] = useState("");
@@ -230,18 +245,18 @@ export default function PublicHome({ initialSection = "" }) {
                 <span className="size-2 rounded-full bg-teal-600" /> Healthcare, more connected
               </p>
               <h1 className="max-w-3xl text-4xl font-bold leading-[1.1] tracking-tight text-slate-950 sm:text-5xl lg:text-6xl">
-                Your care journey, <span className="text-teal-700">all in one place.</span>
+                {amharic ? "የእርስዎ የጤና ጉዞ " : "Your care journey, "}<span className="text-teal-700">{amharic ? "በአንድ ቦታ።" : "all in one place."}</span>
               </h1>
               <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-600">
-                Discover participating clinics, request appointments, and keep track of the care information available to you—with one connected experience.
+                {amharic ? "ተሳታፊ ክሊኒኮችን ያግኙ፣ ቀጠሮ ይጠይቁ እና ለእርስዎ የተዘጋጀውን የጤና መረጃ በአንድ የተያያዘ ስርዓት ይከታተሉ።" : "Discover participating clinics, request appointments, and keep track of the care information available to you—with one connected experience."}
               </p>
               <div className="public-hero-actions mt-8 flex flex-wrap gap-3">
                 <Link to="/clinics" className="public-button public-button-primary inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-teal-700 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-teal-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700">
-                  Explore clinics <ArrowRight size={17} />
+                  {t("exploreClinics")} <ArrowRight size={17} />
                 </Link>
                 {!isAuthenticated && !loading && (
                   <>
-                    <Link to="/register" className="public-button public-button-secondary inline-flex min-h-12 items-center justify-center rounded-xl border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-800 hover:border-teal-500 hover:text-teal-800">Create patient account</Link>
+                    <Link to="/register" className="public-button public-button-secondary inline-flex min-h-12 items-center justify-center rounded-xl border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-800 hover:border-teal-500 hover:text-teal-800">{t("createAccount")}</Link>
                   </>
                 )}
               </div>

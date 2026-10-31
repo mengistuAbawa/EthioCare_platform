@@ -3,6 +3,7 @@ import Breadcrumbs from "./Breadcrumbs";
 import NotificationBell from "./NotificationBell";
 import UserProfileMenu from "./UserProfileMenu";
 import { IconButton } from "../ui/Primitives";
+import LanguageSwitcher from "../ui/LanguageSwitcher";
 
 const notificationPathByRole = {
   patient: "/patient/notifications",
@@ -42,6 +43,7 @@ export default function DashboardHeader({
         </div>
       </div>
       <div className="flex shrink-0 items-center gap-1 sm:gap-2">
+        {user?.role === "patient" && <LanguageSwitcher />}
         {clinicContext && (
           <div
             className="hidden max-w-48 truncate rounded-lg bg-page px-3 py-2 text-xs font-medium text-text-secondary md:block"

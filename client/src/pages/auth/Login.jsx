@@ -3,6 +3,8 @@ import { Eye, EyeOff, HeartPulse, LockKeyhole, Mail } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/useAuth";
 import { Button, IconButton } from "../../components/ui/Primitives";
+import LanguageSwitcher from "../../components/ui/LanguageSwitcher";
+import { useLanguage } from "../../i18n/LanguageContext";
 
 const roleRoutes = {
   system_admin: "/admin/dashboard",
@@ -21,6 +23,8 @@ const rolePathPrefixes = {
 };
 
 export default function Login() {
+  const { language, t } = useLanguage();
+  const amharic = language === "am";
   const navigate = useNavigate();
   const location = useLocation();
   const { login } = useAuth();
@@ -73,6 +77,7 @@ export default function Login() {
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-linear-to-br from-teal-50 via-white to-cyan-50 px-4 py-12">
+      <div className="fixed right-4 top-4 z-40"><LanguageSwitcher /></div>
       <div className="grid w-full max-w-6xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl lg:grid-cols-2">
         <section className="hidden bg-teal-700 p-10 text-white lg:flex lg:flex-col lg:justify-between">
           <div>
@@ -81,7 +86,7 @@ export default function Login() {
               <span className="text-2xl font-bold">EthioCare</span>
             </div>
             <h1 className="max-w-sm text-4xl font-bold leading-tight">
-              Secure access to your healthcare workspace.
+              {amharic ? "ደህንነቱ የተጠበቀ የጤና ስራ ቦታ መዳረሻ።" : "Secure access to your healthcare workspace."}
             </h1>
           </div>
 
@@ -96,14 +101,14 @@ export default function Login() {
         <section className="p-6 sm:p-10">
           <div className="mx-auto max-w-md">
             <div className="mb-8 text-center">
-              <h2 className="text-3xl font-bold text-slate-900">Welcome back</h2>
-              <p className="mt-2 text-sm text-slate-500">Sign in to continue to your dashboard</p>
+              <h2 className="text-3xl font-bold text-slate-900">{amharic ? "እንኳን በደህና ተመለሱ" : "Welcome back"}</h2>
+              <p className="mt-2 text-sm text-slate-500">{amharic ? "ወደ ዳሽቦርድዎ ለመቀጠል ይግቡ" : "Sign in to continue to your dashboard"}</p>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-5">
               <div>
                 <label htmlFor="email" className="mb-2 block text-sm font-medium text-slate-700">
-                  Email address <span className="text-rose-700" aria-hidden="true">*</span>
+                  {amharic ? "ኢሜይል አድራሻ" : "Email address"} <span className="text-rose-700" aria-hidden="true">*</span>
                 </label>
                 <div className="relative">
                   <Mail className="pointer-events-none absolute left-3 top-3.5 h-5 w-5 text-slate-400" />
@@ -126,7 +131,7 @@ export default function Login() {
 
               <div>
                 <label htmlFor="password" className="mb-2 block text-sm font-medium text-slate-700">
-                  Password <span className="text-rose-700" aria-hidden="true">*</span>
+                  {amharic ? "የይለፍ ቃል" : "Password"} <span className="text-rose-700" aria-hidden="true">*</span>
                 </label>
                 <div className="relative">
                   <LockKeyhole className="pointer-events-none absolute left-3 top-3.5 h-5 w-5 text-slate-400" />
@@ -161,12 +166,12 @@ export default function Login() {
               )}
 
               <Button type="submit" loading={loading} className="w-full">
-                {loading ? "Signing in..." : "Sign in"}
+                {loading ? (amharic ? "በመግባት ላይ..." : "Signing in...") : t("signIn")}
               </Button>
             </form>
 
             <div className="mt-6 text-center text-sm text-slate-600">
-              New to EthioCare?{" "}
+              {amharic ? "EthioCare አዲስ ተጠቃሚ ነዎት?" : "New to EthioCare?"}{" "}
               <Link to="/register" className="font-semibold text-teal-700 hover:text-teal-800">
                 Create a patient account
               </Link>

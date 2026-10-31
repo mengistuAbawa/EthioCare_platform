@@ -159,7 +159,13 @@ const getPublicDoctorById = async (req, res) => {
       return res.status(404).json({ success: false, message: "Doctor profile not found." });
     }
 
-    return res.status(200).json({ success: true, data: { doctor: result.rows[0] } });
+    return res.status(200).json({
+      success: true,
+      data: {
+        doctor: result.rows[0],
+        doctors: result.rows,
+      },
+    });
   } catch (error) {
     return sendDatabaseFailure(error, res, "Unable to load the doctor profile.");
   }
@@ -172,8 +178,15 @@ const getClinicDoctorCandidates = async (req, res) => {
          FROM users u
         WHERE u.role = 'doctor'
           AND u.is_active = TRUE
-          AND NOT EXISTS (SELECT 1 FROM doctors d WHERE d.user_id = u.id)
+          AND NOT EXISTS (
+            SELECT 1
+              FROM doctors d
+             WHERE d.user_id = u.id
+               AND d.clinic_id = $1
+               AND d.is_active = TRUE
+          )
         ORDER BY u.full_name`,
+      [req.params.clinicId],
     );
 
     return res.status(200).json({ success: true, data: { candidates: result.rows } });
@@ -220,6 +233,16 @@ const createDoctorProfile = async (req, res) => {
            (user_id, clinic_id, specialty, qualifications, license_number,
             consultation_fee, is_available, is_active, is_profile_approved)
          VALUES ($1, $2, $3, $4, $5, $6, TRUE, TRUE, TRUE)
+         ON CONFLICT (user_id, clinic_id)
+         DO UPDATE SET
+           specialty = EXCLUDED.specialty,
+           qualifications = EXCLUDED.qualifications,
+           license_number = EXCLUDED.license_number,
+           consultation_fee = EXCLUDED.consultation_fee,
+           is_available = TRUE,
+           is_active = TRUE,
+           is_profile_approved = TRUE,
+           updated_at = NOW()
          RETURNING id, user_id, clinic_id, specialty, qualifications,
                    license_number, consultation_fee, is_available, is_active,
                    is_profile_approved, created_at, updated_at`,
@@ -458,19 +481,18 @@ const updateMyDoctorProfile = async (req, res) => {
 
   try {
     const result = await withTransaction(async (client) => {
-      const currentDoctor = await client.query(
+      const currentDoctors = await client.query(
         "SELECT id FROM doctors WHERE user_id = $1 AND is_active = TRUE FOR UPDATE",
         [req.user.id]
       );
 
-      if (!currentDoctor.rowCount) {
+      if (!currentDoctors.rowCount) {
         const error = new Error("Doctor profile not found.");
         error.status = 404;
         throw error;
       }
 
       const doctor = await updateDoctorFields({
-        doctorId: currentDoctor.rows[0].id,
         userId: req.user.id,
         fields: updateFields,
         values,

@@ -4,7 +4,7 @@ const requireAssessmentAccess = (...allowedRoles) => async (req, res, next) => {
   try {
     const assessmentId = req.params.assessmentId;
     const result = await pool.query(
-      `SELECT a.id, a.patient_id, a.doctor_id, a.status
+      `SELECT a.id, a.patient_id, a.doctor_id, a.clinic_id, a.status
          FROM patient_health_assessments a
         WHERE a.id = $1`,
       [assessmentId]
@@ -28,14 +28,15 @@ const requireAssessmentAccess = (...allowedRoles) => async (req, res, next) => {
         return res.status(404).json({ success: false, message: "Assessment not found." });
       }
       const doctorResult = await pool.query(
-        `SELECT d.id
+        `SELECT d.id, d.clinic_id
            FROM doctors d
            JOIN clinics c ON c.id = d.clinic_id
                             AND c.verification_status = 'verified'
                             AND c.operational_status = 'active'
           WHERE d.id = $1 AND d.user_id = $2
+            AND d.clinic_id = $3
             AND d.is_active = TRUE AND d.is_profile_approved = TRUE`,
-        [assessment.doctor_id, req.user.id]
+        [assessment.doctor_id, req.user.id, assessment.clinic_id]
       );
       if (doctorResult.rowCount === 0) {
         return res.status(404).json({ success: false, message: "Assessment not found." });

@@ -9,12 +9,15 @@ import { getMyAssessments } from "../../services/assessmentService";
 import { getUnreadNotificationCount } from "../../services/notificationService";
 import { getMyAppointments } from "../../services/patientAppointmentService";
 import { PageHeader, StatusBadge } from "../../components/ui/Primitives";
+import { useLanguage } from "../../i18n/LanguageContext";
 
 const cardClass = "ui-card p-5";
 const formatDate = (value) => new Date(value).toLocaleString();
 
 export default function PatientDashboard() {
   const { user } = useAuth();
+  const { language, t } = useLanguage();
+  const amharic = language === "am";
   const [assessments, setAssessments] = useState([]);
   const [appointments, setAppointments] = useState([]);
   const [upcomingCount, setUpcomingCount] = useState(0);
@@ -74,11 +77,11 @@ export default function PatientDashboard() {
       <section>
         <PageHeader
           as="h2"
-          title={`Welcome, ${user?.full_name || "Patient"}`}
-          description="Your appointments, health assessments, and care information in one place."
+          title={`${amharic ? "እንኳን ደህና መጡ" : "Welcome"}, ${user?.full_name || (amharic ? "ታካሚ" : "Patient")}`}
+          description={amharic ? "ቀጠሮዎችዎ፣ የጤና ግምገማዎችዎ እና የእንክብካቤ መረጃዎ በአንድ ቦታ።" : "Your appointments, health assessments, and care information in one place."}
           actions={(
             <Link to="/patient/assessment/new" className="ui-button ui-button-primary w-full sm:w-auto">
-              <ClipboardList size={18} aria-hidden="true" /> Start assessment
+              <ClipboardList size={18} aria-hidden="true" /> {t("startAssessment")}
             </Link>
           )}
         />
@@ -87,22 +90,22 @@ export default function PatientDashboard() {
       <section aria-label="Patient overview" className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <Link to="/patient/assessments" className={`${cardClass} transition-colors hover:border-teal-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700`}>
           <ClipboardList className="text-teal-700" size={21} aria-hidden="true" />
-          <p className="mt-3 text-sm text-slate-600">Health assessments</p>
+          <p className="mt-3 text-sm text-slate-600">{t("healthAssessments")}</p>
           <p className="mt-1 text-3xl font-bold text-slate-950">{assessments.length}</p>
         </Link>
         <Link to="/patient/assessments" className={`${cardClass} transition-colors hover:border-teal-300`}>
           <ClipboardList className="text-teal-700" size={21} aria-hidden="true" />
-          <p className="mt-3 text-sm text-slate-600">Draft assessments</p>
+          <p className="mt-3 text-sm text-slate-600">{t("draftAssessments")}</p>
           <p className="mt-1 text-3xl font-bold text-slate-950">{draftCount}</p>
         </Link>
         <Link to="/patient/assessments" className={`${cardClass} transition-colors hover:border-teal-300`}>
           <ClipboardList className="text-amber-700" size={21} aria-hidden="true" />
-          <p className="mt-3 text-sm text-slate-600">Awaiting doctor review</p>
+          <p className="mt-3 text-sm text-slate-600">{t("awaitingDoctorReview")}</p>
           <p className="mt-1 text-3xl font-bold text-slate-950">{awaitingReviewCount}</p>
         </Link>
         <Link to="/patient/assessments" className={`${cardClass} transition-colors hover:border-teal-300`}>
           <Stethoscope className="text-violet-700" size={21} aria-hidden="true" />
-          <p className="mt-3 text-sm text-slate-600">Reviewed by doctor</p>
+          <p className="mt-3 text-sm text-slate-600">{t("reviewedByDoctor")}</p>
           <p className="mt-1 text-3xl font-bold text-slate-950">{reviewedCount}</p>
         </Link>
         <Link to="/patient/assessments" className={`${cardClass} transition-colors hover:border-teal-300`}>
@@ -112,12 +115,12 @@ export default function PatientDashboard() {
         </Link>
         <Link to="/patient/notifications" className={`${cardClass} transition-colors hover:border-teal-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700`}>
           <Bell className="text-teal-700" size={21} aria-hidden="true" />
-          <p className="mt-3 text-sm text-slate-600">Unread notifications</p>
+          <p className="mt-3 text-sm text-slate-600">{t("unreadNotifications")}</p>
           <p className="mt-1 text-3xl font-bold text-slate-950">{unreadCount}</p>
         </Link>
         <Link to="/patient/appointments" className={`${cardClass} transition-colors hover:border-teal-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700`}>
           <CalendarPlus className="text-teal-700" size={21} aria-hidden="true" />
-          <p className="mt-3 text-sm text-slate-600">Upcoming appointments</p>
+          <p className="mt-3 text-sm text-slate-600">{t("upcomingAppointments")}</p>
           <p className="mt-1 text-3xl font-bold text-slate-950">{upcomingCount}</p>
         </Link>
       </section>
@@ -125,7 +128,7 @@ export default function PatientDashboard() {
       <section className={cardClass}>
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
-            <h2 className="text-lg font-bold text-slate-950">Upcoming appointments</h2>
+            <h2 className="text-lg font-bold text-slate-950">{t("upcomingAppointments")}</h2>
             <p className="mt-1 text-sm text-slate-600">Appointments belonging to your account.</p>
           </div>
           <Link to="/patient/appointments" className="inline-flex items-center gap-1 text-sm font-semibold text-teal-800 hover:underline">
@@ -154,11 +157,11 @@ export default function PatientDashboard() {
       <section className={cardClass}>
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
-            <h2 className="text-lg font-bold text-slate-950">Recent health assessments</h2>
+            <h2 className="text-lg font-bold text-slate-950">{t("recentAssessments")}</h2>
             <p className="mt-1 text-sm text-slate-600">Only a brief summary is shown here. Open an assessment for its details.</p>
           </div>
           <Link to="/patient/assessments" className="inline-flex items-center gap-1 text-sm font-semibold text-teal-800 hover:underline">
-            View history <ArrowRight size={16} aria-hidden="true" />
+            {t("viewHistory")} <ArrowRight size={16} aria-hidden="true" />
           </Link>
         </div>
         {recentAssessments.length === 0 ? (
@@ -193,11 +196,11 @@ export default function PatientDashboard() {
 
       <section className="grid gap-4 sm:grid-cols-2">
         <Link to="/patient/clinics" className={`${cardClass} flex items-center justify-between gap-3 hover:border-teal-300`}>
-          <span><span className="block font-semibold text-slate-950">Find a clinic</span><span className="mt-1 block text-sm text-slate-600">Explore verified care providers.</span></span>
+          <span><span className="block font-semibold text-slate-950">{t("findClinic")}</span><span className="mt-1 block text-sm text-slate-600">{amharic ? "የተረጋገጡ የጤና አገልግሎት ሰጪዎችን ያስሱ።" : "Explore verified care providers."}</span></span>
           <Stethoscope size={20} className="shrink-0 text-teal-700" aria-hidden="true" />
         </Link>
         <Link to="/patient/doctors" className={`${cardClass} flex items-center justify-between gap-3 hover:border-teal-300`}>
-          <span><span className="block font-semibold text-slate-950">Find a doctor</span><span className="mt-1 block text-sm text-slate-600">Search approved doctor profiles.</span></span>
+          <span><span className="block font-semibold text-slate-950">{t("findDoctor")}</span><span className="mt-1 block text-sm text-slate-600">{amharic ? "የተረጋገጡ የዶክተር መገለጫዎችን ይፈልጉ።" : "Search approved doctor profiles."}</span></span>
           <Stethoscope size={20} className="shrink-0 text-teal-700" aria-hidden="true" />
         </Link>
       </section>

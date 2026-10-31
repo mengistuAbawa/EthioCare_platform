@@ -4,11 +4,14 @@ import ErrorState from "../../components/dashboard/ErrorState";
 import LoadingState from "../../components/dashboard/LoadingState";
 import { Button, FormField, PageHeader, StatusBadge } from "../../components/ui/Primitives";
 import { getMyAppointments } from "../../services/patientAppointmentService";
+import { useLanguage } from "../../i18n/LanguageContext";
 
 const formatDate = (value) => new Date(value).toLocaleString();
 const statusOptions = ["pending", "confirmed", "completed", "cancelled", "rejected", "no_show"];
 
 export default function PatientAppointmentsPage({ history = false }) {
+  const { language, t } = useLanguage();
+  const amharic = language === "am";
   const [appointments, setAppointments] = useState([]);
   const [pagination, setPagination] = useState(null);
   const [page, setPage] = useState(1);
@@ -39,11 +42,11 @@ export default function PatientAppointmentsPage({ history = false }) {
   return (
     <section className="ui-card p-5 sm:p-6">
       <PageHeader
-        title={history ? "Appointment history" : "My appointments"}
-        description="Records are limited to your authenticated account. Appointment changes are not currently supported."
+        title={history ? t("appointmentHistory") : t("myAppointments")}
+        description={amharic ? "መዝገቦች ለእርስዎ የተረጋገጠ መለያ ብቻ የተገደቡ ናቸው።" : "Records are limited to your authenticated account. Appointment changes are not currently supported."}
         className="mb-5"
       />
-      <FormField id="appointment-status-filter" label="Filter by status" className="mb-4 max-w-xs">
+      <FormField id="appointment-status-filter" label={t("filterByStatus")} className="mb-4 max-w-xs">
         <select
           className="ui-control w-full text-sm"
           value={status}
@@ -54,7 +57,7 @@ export default function PatientAppointmentsPage({ history = false }) {
             setStatus(event.target.value);
           }}
         >
-          <option value="">All statuses</option>
+          <option value=""> {t("allStatuses")}</option>
           {statusOptions.map((item) => <option key={item} value={item}>{item.replaceAll("_", " ")}</option>)}
         </select>
       </FormField>
