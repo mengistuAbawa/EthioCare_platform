@@ -60,7 +60,7 @@ export default function MobileSidebar({ open, onClose, children }) {
         role="dialog"
         aria-modal={open ? "true" : undefined}
         aria-label="Dashboard navigation"
-        className={`absolute inset-y-0 left-0 flex w-[min(20rem,85vw)] flex-col border-r border-border bg-surface shadow-xl transition-transform motion-reduce:transition-none ${
+        className={`absolute inset-y-0 left-0 flex w-[min(20rem,85vw)] flex-col border-r border-border bg-surface shadow-[var(--shadow-popover)] transition-transform motion-reduce:transition-none ${
           open ? "translate-x-0" : "-translate-x-full"
         }`}
       >

@@ -99,7 +99,7 @@ export default function DashboardLayout() {
       </a>
       <aside
         className={`hidden shrink-0 border-r border-border bg-surface transition-[width] motion-reduce:transition-none lg:flex ${
-          collapsed ? "w-[76px]" : "w-72"
+          collapsed ? "w-[76px]" : "w-[264px]"
         }`}
       >
         <div className="sticky top-0 h-screen w-full">

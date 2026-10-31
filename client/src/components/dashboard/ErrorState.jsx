@@ -2,7 +2,7 @@ export default function ErrorState({ title = "Something went wrong", message, on
   return (
     <section
       role="alert"
-      className={`rounded-card border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800 ${className}`}
+      className={`ui-alert ui-alert-danger text-sm ${className}`}
     >
       <h2 className="font-semibold">{title}</h2>
       {message && <p className="mt-1 leading-5">{message}</p>}

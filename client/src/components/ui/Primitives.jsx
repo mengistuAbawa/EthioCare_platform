@@ -1,4 +1,4 @@
-import { cloneElement, isValidElement } from "react";
+import { cloneElement, isValidElement, useEffect, useId, useRef } from "react";
 import { Search } from "lucide-react";
 
 const buttonVariants = {
@@ -141,5 +141,85 @@ export function StatusBadge({ status, label, ...props }) {
     <Badge tone={statusTones[key] || "neutral"} {...props}>
       {displayLabel}
     </Badge>
+  );
+}
+
+export function ConfirmationDialog({
+  open,
+  title,
+  description,
+  confirmLabel = "Confirm",
+  cancelLabel = "Cancel",
+  tone = "danger",
+  loading = false,
+  onConfirm,
+  onCancel,
+}) {
+  const dialogRef = useRef(null);
+  const titleId = useId();
+  const descriptionId = useId();
+
+  useEffect(() => {
+    if (!open) return undefined;
+
+    const dialog = dialogRef.current;
+    const previousFocus = document.activeElement;
+    const cancelButton = dialog?.querySelector("[data-dialog-cancel]");
+    cancelButton?.focus();
+
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape" && !loading) {
+        onCancel();
+        return;
+      }
+      if (event.key !== "Tab" || !dialog) return;
+
+      const focusable = [...dialog.querySelectorAll("button:not(:disabled)")];
+      if (!focusable.length) return;
+
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      if (previousFocus instanceof HTMLElement) previousFocus.focus();
+    };
+  }, [open, loading, onCancel]);
+
+  if (!open) return null;
+
+  return (
+    <div className="ui-dialog-backdrop" role="presentation" onMouseDown={(event) => {
+      if (event.target === event.currentTarget && !loading) onCancel();
+    }}>
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        aria-describedby={descriptionId}
+        className="ui-dialog"
+      >
+        <h2 id={titleId} className="ui-dialog-title">{title}</h2>
+        <p id={descriptionId} className="ui-dialog-description">{description}</p>
+        <div className="ui-dialog-actions">
+          <Button data-dialog-cancel variant="secondary" onClick={onCancel} disabled={loading}>
+            {cancelLabel}
+          </Button>
+          <Button variant={tone === "danger" ? "danger" : "primary"} loading={loading} onClick={onConfirm}>
+            {confirmLabel}
+          </Button>
+        </div>
+      </div>
+    </div>
   );
 }

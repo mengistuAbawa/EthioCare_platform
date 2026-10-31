@@ -24,8 +24,8 @@ export default function SidebarGroup({ group, collapsed, onNavigate, onLogout, i
           aria-expanded={expanded}
           aria-controls={groupId}
           onClick={() => setExpanded((current) => !current)}
-          className={`mb-2 flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-xs font-semibold uppercase tracking-[0.12em] hover:text-slate-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 ${
-            groupIsActive ? "text-teal-800" : "text-slate-400"
+          className={`mb-2 flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-xs font-semibold uppercase tracking-[0.12em] hover:text-text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 ${
+            groupIsActive ? "text-teal-800" : "text-text-secondary"
           }`}
         >
           {group.label}

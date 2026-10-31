@@ -8,7 +8,7 @@ export default function SidebarItem({ item, collapsed = false, onNavigate, onLog
     `group flex min-h-11 items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors motion-reduce:transition-none ${
       selected
         ? "bg-teal-50 text-teal-800 ring-1 ring-inset ring-teal-100"
-        : "text-slate-600 hover:bg-slate-100 hover:text-slate-950"
+        : "text-text-secondary hover:bg-page hover:text-text-primary"
     } ${
       collapsed ? "justify-center px-2" : ""
     }`;
