@@ -68,6 +68,7 @@ export default function DoctorManagement() {
   const [editForm, setEditForm] = useState({});
   const [services, setServices] = useState([]);
   const [selectedServices, setSelectedServices] = useState([]);
+  const [workspaceTab, setWorkspaceTab] = useState("profile");
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -113,6 +114,7 @@ export default function DoctorManagement() {
 
   const selectDoctor = async (doctor) => {
     setSelectedId(String(doctor.id));
+    setWorkspaceTab("profile");
     setServices([]);
     setSelectedServices([]);
     setEditForm({
@@ -310,94 +312,104 @@ export default function DoctorManagement() {
   };
 
   return (
-    <div>
-      <div className="mx-auto max-w-7xl">
-        <PageHeader
-          title="Doctors"
-          description={canManage
-            ? "Manage authorized doctor profiles and services for this clinic."
-            : "Browse doctor information for your clinic."}
-          className="mb-8"
-        />
+    <main className="doctor-management">
+      <PageHeader
+        title="Doctor management"
+        description={canManage
+          ? "Create doctor accounts, maintain profiles, and control clinic assignments."
+          : "Browse the doctor profiles assigned to your clinic."}
+      />
 
-        {error ? (
-          <ErrorState message={error} onRetry={() => { setLoading(true); load(); }} className="mb-5" />
-        ) : null}
-        {notice ? <p className="mb-5 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-emerald-800" role="status">{notice}</p> : null}
+      {error ? (
+        <ErrorState message={error} onRetry={() => { setLoading(true); load(); }} className="doctor-alert" />
+      ) : null}
+      {notice ? (
+        <p className="doctor-notice" role="status">{notice}</p>
+      ) : null}
 
-        <div className="grid items-start gap-6 lg:grid-cols-[0.85fr_1.15fr]">
-          <Card as="section">
-            <div className="flex items-center justify-between gap-3">
-              <h2 className="text-xl font-bold text-slate-900">Clinic doctors</h2>
-              <span className="rounded-full bg-slate-100 px-3 py-1 text-sm text-slate-700">{doctors.length}</span>
+      <section className="doctor-summary" aria-label="Doctor summary">
+        <div>
+          <span className="doctor-summary-label">Clinic doctors</span>
+          <strong>{doctors.length}</strong>
+        </div>
+        <div>
+          <span className="doctor-summary-label">Available now</span>
+          <strong>{doctors.filter((doctor) => doctor.is_active && doctor.is_available).length}</strong>
+        </div>
+        <div>
+          <span className="doctor-summary-label">Approved profiles</span>
+          <strong>{doctors.filter((doctor) => doctor.is_profile_approved).length}</strong>
+        </div>
+      </section>
+
+      <div className="doctor-layout">
+        <aside className="doctor-directory" aria-label="Clinic doctor directory">
+          <div className="doctor-directory-header">
+            <div>
+              <span className="doctor-section-kicker">Directory</span>
+              <h2>Clinic doctors</h2>
             </div>
-            <SearchInput
-              label="Search clinic doctors"
-              value={doctorSearch}
-              onChange={(event) => setDoctorSearch(event.target.value)}
-              placeholder="Search name or specialty"
-              className="mt-4"
-            />
-            {loading ? (
-              <LoadingState label="Loading clinic doctors..." className="mt-4" />
-            ) : visibleDoctors.length ? (
-              <ul className="mt-4 space-y-3">
-                {visibleDoctors.map((doctor) => (
+            <span className="doctor-count">{visibleDoctors.length}</span>
+          </div>
+          <SearchInput
+            label="Search clinic doctors"
+            value={doctorSearch}
+            onChange={(event) => setDoctorSearch(event.target.value)}
+            placeholder="Search name or specialty"
+            className="doctor-search"
+          />
+          {loading ? (
+            <LoadingState label="Loading clinic doctors..." />
+          ) : visibleDoctors.length ? (
+            <ul className="doctor-list">
+              {visibleDoctors.map((doctor) => {
+                const isSelected = String(doctor.id) === String(selectedId);
+                return (
                   <li key={doctor.id}>
                     <button
                       type="button"
                       onClick={() => selectDoctor(doctor)}
-                      aria-pressed={String(doctor.id) === String(selectedId)}
-                      className={`w-full rounded-xl border p-4 text-left transition ${
-                        String(doctor.id) === String(selectedId)
-                          ? "border-teal-500 bg-teal-50"
-                          : "border-slate-200 hover:border-slate-300"
-                      }`}
+                      aria-pressed={isSelected}
+                      className={`doctor-row ${isSelected ? "is-selected" : ""}`}
                     >
-                      <span className="flex items-start gap-3">
-                        <CircleUserRound className="mt-0.5 shrink-0 text-teal-700" size={20} />
-                        <span className="min-w-0 flex-1">
-                          <span className="block font-semibold text-slate-900">{doctor.name}</span>
-                          <span className="mt-1 block text-sm text-slate-600">{doctor.specialty}</span>
-                          {canManage && doctor.email ? (
-                            <span className="mt-1 block truncate text-xs text-slate-500">{doctor.email}</span>
-                          ) : null}
-                        </span>
-                        <StatusBadge
-                          status={!doctor.is_active ? "inactive" : doctor.is_available ? "available" : "unavailable"}
-                          label={!doctor.is_active ? "Inactive" : doctor.is_available ? "Available" : "Unavailable"}
-                        />
+                      <span className="doctor-avatar" aria-hidden="true">
+                        <CircleUserRound size={22} />
+                      </span>
+                      <span className="doctor-row-main">
+                        <strong>{doctor.name}</strong>
+                        <span>{doctor.specialty || "Specialty not set"}</span>
+                        {canManage && doctor.email ? <small>{doctor.email}</small> : null}
+                      </span>
+                      <span className={`doctor-state ${doctor.is_active && doctor.is_available ? "available" : ""}`}>
+                        {doctor.is_active ? (doctor.is_available ? "Available" : "Unavailable") : "Inactive"}
                       </span>
                     </button>
                   </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="mt-5 rounded-xl bg-slate-50 p-4 text-sm text-slate-600">
-                {doctorSearch ? "No doctors match this search." : "No doctor profiles are assigned to this clinic yet."}
-              </p>
-            )}
-          </Card>
+                );
+              })}
+            </ul>
+          ) : (
+            <div className="doctor-empty">
+              {doctorSearch ? "No doctors match this search." : "No doctor profiles are assigned to this clinic yet."}
+            </div>
+          )}
+        </aside>
 
-          <div className="space-y-6">
-            {canManage ? (
-              <Card as="section">
-                <h2 className="flex items-center gap-2 text-xl font-bold text-slate-900">
-                  <Plus size={20} className="text-teal-700" /> Link existing doctor account
-                </h2>
-                <p className="mt-2 text-sm text-slate-600">
-                  Allocate an existing active doctor account to this clinic.
-                </p>
-                <form onSubmit={submitCreate} className="mt-5 grid gap-4 sm:grid-cols-2">
-                  <label className="text-sm font-medium text-slate-700 sm:col-span-2">
+        <section className="doctor-workspace">
+          {canManage ? (
+            <div className="doctor-add-actions">
+              <details className="doctor-action-card">
+                <summary>
+                  <span className="doctor-action-icon"><Plus size={18} /></span>
+                  <span>
+                    <strong>Link existing doctor</strong>
+                    <small>Allocate an existing account</small>
+                  </span>
+                </summary>
+                <form onSubmit={submitCreate} className="doctor-form-grid">
+                  <label className="doctor-field doctor-span-2">
                     Active doctor account
-                    <select
-                      required
-                      name="user_id"
-                      value={createForm.user_id}
-                      onChange={updateCreateForm}
-                      className="mt-1.5 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5"
-                    >
+                    <select required name="user_id" value={createForm.user_id} onChange={updateCreateForm}>
                       <option value="">Select an unassigned account</option>
                       {candidates.map((candidate) => (
                         <option key={candidate.id} value={candidate.id}>
@@ -406,50 +418,42 @@ export default function DoctorManagement() {
                       ))}
                     </select>
                   </label>
-                  <label className="text-sm font-medium text-slate-700">
+                  <label className="doctor-field">
                     Specialty
-                    <input required minLength="2" maxLength="120" name="specialty" value={createForm.specialty} onChange={updateCreateForm} className="mt-1.5 w-full rounded-xl border border-slate-300 px-3 py-2.5" />
+                    <input required minLength="2" maxLength="120" name="specialty" value={createForm.specialty} onChange={updateCreateForm} />
                   </label>
-                  <label className="text-sm font-medium text-slate-700">
+                  <label className="doctor-field">
                     License number
-                    <input required minLength="2" maxLength="120" name="license_number" value={createForm.license_number} onChange={updateCreateForm} className="mt-1.5 w-full rounded-xl border border-slate-300 px-3 py-2.5" />
+                    <input required minLength="2" maxLength="120" name="license_number" value={createForm.license_number} onChange={updateCreateForm} />
                   </label>
-                  <label className="text-sm font-medium text-slate-700 sm:col-span-2">
+                  <label className="doctor-field doctor-span-2">
                     Qualifications
-                    <textarea maxLength="2000" rows="2" name="qualifications" value={createForm.qualifications} onChange={updateCreateForm} className="mt-1.5 w-full rounded-xl border border-slate-300 px-3 py-2.5" />
+                    <textarea maxLength="2000" rows="2" name="qualifications" value={createForm.qualifications} onChange={updateCreateForm} />
                   </label>
-                  <label className="text-sm font-medium text-slate-700">
+                  <label className="doctor-field">
                     Consultation fee (ETB)
-                    <input required min="0" step="0.01" type="number" name="consultation_fee" value={createForm.consultation_fee} onChange={updateCreateForm} className="mt-1.5 w-full rounded-xl border border-slate-300 px-3 py-2.5" />
+                    <input required min="0" step="0.01" type="number" name="consultation_fee" value={createForm.consultation_fee} onChange={updateCreateForm} />
                   </label>
-                  <div className="flex items-end">
-                    <Button
-                      type="submit"
-                      disabled={submitting || !candidates.length}
-                      loading={submitting}
-                      className="w-full"
-                    >
-                      {submitting ? "Saving..." : "Create doctor profile"}
+                  <div className="doctor-form-action">
+                    <Button type="submit" disabled={submitting || !candidates.length} loading={submitting}>
+                      {submitting ? "Saving..." : "Allocate doctor"}
                     </Button>
                   </div>
                   {!candidates.length ? (
-                    <p className="text-sm text-amber-800 sm:col-span-2">
-                      No unassigned active doctor accounts are available to link.
-                    </p>
+                    <p className="doctor-warning doctor-span-2">No unassigned active doctor accounts are available to link.</p>
                   ) : null}
                 </form>
-              </Card>
-            ) : null}
+              </details>
 
-            {canManage ? (
-              <Card as="section">
-                <h2 className="flex items-center gap-2 text-xl font-bold text-slate-900">
-                  <Plus size={20} className="text-teal-700" /> Add new doctor account
-                </h2>
-                <p className="mt-2 text-sm text-slate-600">
-                  Create the login account and doctor profile, then allocate both to this clinic.
-                </p>
-                <form onSubmit={submitDoctorAccount} className="mt-5 grid gap-4 sm:grid-cols-2">
+              <details className="doctor-action-card">
+                <summary>
+                  <span className="doctor-action-icon"><Plus size={18} /></span>
+                  <span>
+                    <strong>Create new doctor</strong>
+                    <small>Add account and profile</small>
+                  </span>
+                </summary>
+                <form onSubmit={submitDoctorAccount} className="doctor-form-grid">
                   {[
                     ["full_name", "Full name", "text", ""],
                     ["email", "Email address", "email", ""],
@@ -459,7 +463,7 @@ export default function DoctorManagement() {
                     ["license_number", "License number", "text", ""],
                     ["consultation_fee", "Consultation fee (ETB)", "number", "0"],
                   ].map(([name, label, type, placeholder]) => (
-                    <label key={name} className="text-sm font-medium text-slate-700">
+                    <label key={name} className="doctor-field">
                       {label}
                       <input
                         required={name !== "phone"}
@@ -472,172 +476,166 @@ export default function DoctorManagement() {
                         maxLength={name === "email" ? 254 : 120}
                         min={name === "consultation_fee" ? 0 : undefined}
                         step={name === "consultation_fee" ? 0.01 : undefined}
-                        className="mt-1.5 w-full rounded-xl border border-slate-300 px-3 py-2.5"
                       />
                     </label>
                   ))}
-                  <label className="text-sm font-medium text-slate-700 sm:col-span-2">
+                  <label className="doctor-field doctor-span-2">
                     Qualifications
-                    <textarea maxLength="2000" rows="2" name="qualifications" value={accountForm.qualifications} onChange={updateAccountForm} className="mt-1.5 w-full rounded-xl border border-slate-300 px-3 py-2.5" />
+                    <textarea maxLength="2000" rows="2" name="qualifications" value={accountForm.qualifications} onChange={updateAccountForm} />
                   </label>
-                  <Button type="submit" loading={submitting} disabled={submitting} className="sm:col-span-2">
-                    Create doctor account
-                  </Button>
-                </form>
-              </Card>
-            ) : null}
-
-            {selectedDoctor && canManage ? (
-              <>
-                <Card as="section">
-                  <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div>
-                      <h2 className="text-xl font-bold text-slate-900">{selectedDoctor.name}</h2>
-                      <p className="mt-1 text-sm text-slate-600">Professional profile and assignment status</p>
-                    </div>
-                    <StatusBadge
-                      status={selectedDoctor.is_profile_approved ? "approved" : "pending"}
-                      label={selectedDoctor.is_profile_approved ? "Public profile approved" : "Awaiting review"}
-                    />
+                  <div className="doctor-form-action doctor-span-2">
+                    <Button type="submit" loading={submitting} disabled={submitting}>Create doctor account</Button>
                   </div>
+                </form>
+              </details>
+            </div>
+          ) : null}
 
-                  <form onSubmit={submitProfile} className="mt-5 grid gap-4 sm:grid-cols-2">
-                    {profileFields.map(([name, label]) => (
-                      <label key={name} className="text-sm font-medium text-slate-700">
-                        {label}
-                        <input
-                          required={name !== "qualifications"}
-                          type={name === "consultation_fee" ? "number" : "text"}
-                          min={name === "consultation_fee" ? "0" : undefined}
-                          step={name === "consultation_fee" ? "0.01" : undefined}
-                          maxLength={name === "qualifications" ? 2000 : 120}
-                          name={name}
-                          value={editForm[name] ?? ""}
-                          onChange={updateEditForm}
-                          className="mt-1.5 w-full rounded-xl border border-slate-300 px-3 py-2.5"
-                        />
-                      </label>
-                    ))}
-                    <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
-                      <input type="checkbox" name="is_available" checked={Boolean(editForm.is_available)} onChange={updateEditForm} />
-                      Available to patients
-                    </label>
-                    <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
-                      <input type="checkbox" name="is_active" checked={Boolean(editForm.is_active)} onChange={updateEditForm} />
-                      Active clinic assignment
-                    </label>
-                    {!selectedDoctor.is_profile_approved ? (
-                      <label className="flex items-center gap-2 text-sm font-medium text-slate-700 sm:col-span-2">
-                        <input type="checkbox" name="is_profile_approved" checked={Boolean(editForm.is_profile_approved)} onChange={updateEditForm} />
-                        I reviewed these public profile details
-                      </label>
-                    ) : null}
-                    <Button
-                      type="submit"
-                      loading={submitting}
-                    >
-                      Save profile
-                    </Button>
-                  </form>
-                  <form onSubmit={submitPasswordReset} className="mt-5 grid gap-4 border-t border-slate-200 pt-5 sm:grid-cols-2">
-                    <div className="sm:col-span-2">
-                      <h3 className="flex items-center gap-2 font-semibold text-slate-900">
-                        <KeyRound size={17} /> Reset doctor password
-                      </h3>
-                      <p className="mt-1 text-sm text-slate-600">Set a new password with at least 12 characters.</p>
-                    </div>
-                    <label className="text-sm font-medium text-slate-700">
-                      New password
-                      <input
-                        required
-                        type="password"
-                        minLength={12}
-                        autoComplete="new-password"
-                        value={passwordForm.new_password}
-                        onChange={(event) => setPasswordForm((current) => ({ ...current, new_password: event.target.value }))}
-                        className="mt-1.5 w-full rounded-xl border border-slate-300 px-3 py-2.5"
-                      />
-                    </label>
-                    <label className="text-sm font-medium text-slate-700">
-                      Confirm new password
-                      <input
-                        required
-                        type="password"
-                        minLength={12}
-                        autoComplete="new-password"
-                        value={passwordForm.confirm_password}
-                        onChange={(event) => setPasswordForm((current) => ({ ...current, confirm_password: event.target.value }))}
-                        className="mt-1.5 w-full rounded-xl border border-slate-300 px-3 py-2.5"
-                      />
-                    </label>
-                    <Button type="submit" variant="secondary" loading={submitting} disabled={submitting}>
-                      Reset password
-                    </Button>
-                  </form>
-                  <Button
+          {selectedDoctor && canManage ? (
+            <Card className="doctor-profile-panel" as="section">
+              <header className="doctor-profile-header">
+                <div className="doctor-profile-person">
+                  <span className="doctor-avatar doctor-avatar-large" aria-hidden="true"><CircleUserRound size={28} /></span>
+                  <div>
+                    <span className="doctor-section-kicker">Selected doctor</span>
+                    <h2>{selectedDoctor.name}</h2>
+                    <p>{selectedDoctor.specialty || "Specialty not set"}</p>
+                  </div>
+                </div>
+                <StatusBadge
+                  status={selectedDoctor.is_profile_approved ? "approved" : "pending"}
+                  label={selectedDoctor.is_profile_approved ? "Profile approved" : "Awaiting review"}
+                />
+              </header>
+
+              <nav className="doctor-tabs" aria-label="Doctor management sections">
+                {[
+                  ["profile", "Profile"],
+                  ["services", "Services"],
+                  ["security", "Password"],
+                ].map(([id, label]) => (
+                  <button
+                    key={id}
                     type="button"
-                    variant="danger"
-                    disabled={submitting || !selectedDoctor.is_active}
-                    onClick={removeAssignment}
-                    className="mt-4"
+                    className={workspaceTab === id ? "active" : ""}
+                    aria-current={workspaceTab === id ? "page" : undefined}
+                    onClick={() => setWorkspaceTab(id)}
                   >
-                    <UserRoundX size={17} /> Delete doctor assignment
-                  </Button>
-                </Card>
+                    {label}
+                  </button>
+                ))}
+              </nav>
 
-                <Card as="section">
-                  <h2 className="flex items-center gap-2 text-xl font-bold text-slate-900">
-                    <Stethoscope size={20} className="text-teal-700" /> Clinic services
-                  </h2>
-                  <form onSubmit={submitServices} className="mt-4">
-                    {services.length ? (
-                      <ul className="space-y-2">
-                        {services.map((service) => (
-                          <li key={service.id}>
-                            <label className={`flex items-start gap-3 rounded-xl border p-3 ${
-                              service.service_is_active ? "border-slate-200" : "border-slate-100 bg-slate-50 text-slate-400"
-                            }`}>
-                              <input
-                                type="checkbox"
-                                disabled={!service.service_is_active}
-                                checked={selectedServices.includes(service.id)}
-                                onChange={() => toggleService(service.id)}
-                                className="mt-1"
-                              />
-                              <span>
-                                <span className="block font-medium">{service.name}</span>
-                                <span className="mt-0.5 block text-sm">
-                                  {service.duration_minutes} min · {service.fee} ETB
-                                  {!service.service_is_active ? " · Inactive" : ""}
-                                </span>
-                              </span>
-                            </label>
-                          </li>
-                        ))}
-                      </ul>
-                    ) : (
-                      <p className="text-sm text-slate-600">No clinic services are configured yet.</p>
-                    )}
-                    <Button type="submit" variant="secondary" disabled={submitting || !selectedDoctor.is_active} loading={submitting} className="mt-4">
-                      Save service assignments
+              {workspaceTab === "profile" ? (
+                <form onSubmit={submitProfile} className="doctor-tab-content doctor-form-grid">
+                  {profileFields.map(([name, label]) => (
+                    <label key={name} className={`doctor-field ${name === "qualifications" ? "doctor-span-2" : ""}`}>
+                      {label}
+                      <input
+                        required={name !== "qualifications"}
+                        type={name === "consultation_fee" ? "number" : "text"}
+                        min={name === "consultation_fee" ? "0" : undefined}
+                        step={name === "consultation_fee" ? "0.01" : undefined}
+                        maxLength={name === "qualifications" ? 2000 : 120}
+                        name={name}
+                        value={editForm[name] ?? ""}
+                        onChange={updateEditForm}
+                      />
+                    </label>
+                  ))}
+                  <div className="doctor-toggle-grid doctor-span-2">
+                    <label><input type="checkbox" name="is_available" checked={Boolean(editForm.is_available)} onChange={updateEditForm} /><span><strong>Available to patients</strong><small>Show as bookable</small></span></label>
+                    <label><input type="checkbox" name="is_active" checked={Boolean(editForm.is_active)} onChange={updateEditForm} /><span><strong>Active assignment</strong><small>Keep allocated to clinic</small></span></label>
+                    {!selectedDoctor.is_profile_approved ? (
+                      <label><input type="checkbox" name="is_profile_approved" checked={Boolean(editForm.is_profile_approved)} onChange={updateEditForm} /><span><strong>Approve public profile</strong><small>Confirm reviewed details</small></span></label>
+                    ) : null}
+                  </div>
+                  <div className="doctor-profile-actions doctor-span-2">
+                    <Button type="submit" loading={submitting}>Save profile</Button>
+                    <Button type="button" variant="danger" disabled={submitting || !selectedDoctor.is_active} onClick={removeAssignment}>
+                      <UserRoundX size={17} /> Delete assignment
                     </Button>
-                  </form>
-                </Card>
-              </>
-            ) : selectedDoctor ? (
-              <Card as="section">
-                <h2 className="text-xl font-bold text-slate-900">{selectedDoctor.name}</h2>
-                <p className="mt-2 text-teal-800">{selectedDoctor.specialty}</p>
-                {selectedDoctor.qualifications ? <p className="mt-4 text-sm text-slate-600">{selectedDoctor.qualifications}</p> : null}
-              </Card>
-            ) : (
-              <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center text-slate-600">
-                Select a doctor to view {canManage ? "or manage" : ""} their clinic profile.
+                  </div>
+                </form>
+              ) : null}
+
+              {workspaceTab === "services" ? (
+                <form onSubmit={submitServices} className="doctor-tab-content">
+                  <div className="doctor-tab-heading">
+                    <div>
+                      <span className="doctor-section-kicker">Clinic allocation</span>
+                      <h3>Services</h3>
+                    </div>
+                    <span>{selectedServices.length} selected</span>
+                  </div>
+                  {services.length ? (
+                    <div className="doctor-service-grid">
+                      {services.map((service) => (
+                        <label key={service.id} className={!service.service_is_active ? "disabled" : ""}>
+                          <input
+                            type="checkbox"
+                            disabled={!service.service_is_active}
+                            checked={selectedServices.includes(service.id)}
+                            onChange={() => toggleService(service.id)}
+                          />
+                          <span>
+                            <strong>{service.name}</strong>
+                            <small>{service.duration_minutes} min · {service.fee} ETB{!service.service_is_active ? " · Inactive" : ""}</small>
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="doctor-empty">No clinic services are configured yet.</div>
+                  )}
+                  <div className="doctor-profile-actions">
+                    <Button type="submit" disabled={submitting || !selectedDoctor.is_active} loading={submitting}>Save service assignments</Button>
+                  </div>
+                </form>
+              ) : null}
+
+              {workspaceTab === "security" ? (
+                <form onSubmit={submitPasswordReset} className="doctor-tab-content">
+                  <div className="doctor-security-heading">
+                    <span><KeyRound size={20} /></span>
+                    <div>
+                      <h3>Reset doctor password</h3>
+                      <p>Set a secure new password with at least 12 characters.</p>
+                    </div>
+                  </div>
+                  <div className="doctor-form-grid">
+                    <label className="doctor-field">
+                      New password
+                      <input required type="password" minLength={12} autoComplete="new-password" value={passwordForm.new_password} onChange={(event) => setPasswordForm((current) => ({ ...current, new_password: event.target.value }))} />
+                    </label>
+                    <label className="doctor-field">
+                      Confirm new password
+                      <input required type="password" minLength={12} autoComplete="new-password" value={passwordForm.confirm_password} onChange={(event) => setPasswordForm((current) => ({ ...current, confirm_password: event.target.value }))} />
+                    </label>
+                    <div className="doctor-form-action doctor-span-2">
+                      <Button type="submit" variant="secondary" loading={submitting} disabled={submitting}>Reset password</Button>
+                    </div>
+                  </div>
+                </form>
+              ) : null}
+            </Card>
+          ) : selectedDoctor ? (
+            <Card className="doctor-profile-panel" as="section">
+              <div className="doctor-profile-person">
+                <span className="doctor-avatar doctor-avatar-large"><CircleUserRound size={28} /></span>
+                <div><span className="doctor-section-kicker">Doctor profile</span><h2>{selectedDoctor.name}</h2><p>{selectedDoctor.specialty}</p></div>
               </div>
-            )}
-          </div>
-        </div>
+              {selectedDoctor.qualifications ? <p className="doctor-qualifications">{selectedDoctor.qualifications}</p> : null}
+            </Card>
+          ) : (
+            <div className="doctor-selection-empty">
+              <span><Stethoscope size={24} /></span>
+              <h2>Select a doctor</h2>
+              <p>Choose a doctor from the directory to {canManage ? "edit their profile, services, or password." : "view their clinic profile."}</p>
+            </div>
+          )}
+        </section>
       </div>
-    </div>
+    </main>
   );
 }
