@@ -102,7 +102,8 @@
 }
 
 .public-hero {
-  background: linear-gradient(118deg, var(--color-teal-50), var(--color-surface) 52%, var(--color-surface-subtle));
+  background:
+    linear-gradient(118deg, rgb(234 246 246 / 96%), var(--color-surface) 52%, rgb(237 244 255 / 78%));
 }
 
 .public-hero::before {
@@ -165,6 +166,10 @@
   border-color: var(--color-border);
   border-radius: 27px;
   box-shadow: var(--shadow-popover);
+}
+
+:root[data-theme="dark"] .public-hero {
+  background: linear-gradient(118deg, rgb(18 52 60 / 96%), var(--color-surface) 52%, rgb(32 52 81 / 78%));
 }
 
 .public-care-card-heading h2 {
@@ -241,6 +246,26 @@
   border-color: var(--color-teal-200);
   box-shadow: var(--shadow-popover);
   transform: translateY(-2px);
+}
+
+.public-site main > section article:nth-child(4n + 1),
+.public-site main > section ol li:nth-child(4n + 1) {
+  border-top: 3px solid var(--color-brand-teal);
+}
+
+.public-site main > section article:nth-child(4n + 2),
+.public-site main > section ol li:nth-child(4n + 2) {
+  border-top: 3px solid var(--color-accent-blue);
+}
+
+.public-site main > section article:nth-child(4n + 3),
+.public-site main > section ol li:nth-child(4n + 3) {
+  border-top: 3px solid var(--color-accent-violet);
+}
+
+.public-site main > section article:nth-child(4n),
+.public-site main > section ol li:nth-child(4n) {
+  border-top: 3px solid var(--color-accent-gold);
 }
 
 .public-site #services {
