@@ -9,30 +9,33 @@ const { requireClinicPermission } = require("../middleware/requireClinicPermissi
 const {
   getClinicDoctorCandidates,
   createDoctorProfile,
+  createDoctorAccountAndProfile,
   getClinicDoctors,
   getDoctorById,
   updateDoctorProfile,
   removeDoctorFromClinic,
   getDoctorServices,
   updateDoctorServices,
+  resetDoctorPassword,
 } = require("../controllers/doctorController");
 const {
   handleDoctorValidationErrors,
   createDoctorRules,
+  createDoctorAccountRules,
   clinicDoctorParamRules,
   updateDoctorRules,
   updateDoctorServicesRules,
+  resetDoctorPasswordRules,
 } = require("../validators/doctorValidators");
 
 const router = express.Router();
 const clinicStaff = authorize("system_admin", "clinic_admin", "receptionist");
-const clinicManagers = authorize("clinic_admin");
 
 router.get(
   "/:clinicId/doctors/candidates",
   authenticate,
-  authorize("clinic_admin"),
-  requireClinicAdminAccess,
+  authorize("clinic_admin", "receptionist"),
+  requireClinicStaffAccess,
   requireClinicPermission("doctors.manage"),
   handleDoctorValidationErrors,
   getClinicDoctorCandidates
@@ -40,12 +43,22 @@ router.get(
 router.post(
   "/:clinicId/doctors",
   authenticate,
-  authorize("clinic_admin"),
-  requireClinicAdminAccess,
+  authorize("clinic_admin", "receptionist"),
+  requireClinicStaffAccess,
   requireClinicPermission("doctors.manage"),
   createDoctorRules,
   handleDoctorValidationErrors,
   createDoctorProfile
+);
+router.post(
+  "/:clinicId/doctors/account",
+  authenticate,
+  authorize("clinic_admin", "receptionist"),
+  requireClinicStaffAccess,
+  requireClinicPermission("doctors.manage"),
+  createDoctorAccountRules,
+  handleDoctorValidationErrors,
+  createDoctorAccountAndProfile
 );
 router.get(
   "/:clinicId/doctors",
@@ -69,8 +82,8 @@ router.get(
 router.put(
   "/:clinicId/doctors/:doctorId/services",
   authenticate,
-  authorize("clinic_admin"),
-  requireClinicAdminAccess,
+  authorize("clinic_admin", "receptionist"),
+  requireClinicStaffAccess,
   requireClinicPermission("doctors.manage"),
   updateDoctorServicesRules,
   handleDoctorValidationErrors,
@@ -89,18 +102,28 @@ router.get(
 router.patch(
   "/:clinicId/doctors/:doctorId",
   authenticate,
-  clinicManagers,
-  requireClinicAdminAccess,
+  authorize("clinic_admin", "receptionist"),
+  requireClinicStaffAccess,
   requireClinicPermission("doctors.manage"),
   updateDoctorRules,
   handleDoctorValidationErrors,
   updateDoctorProfile
 );
+router.patch(
+  "/:clinicId/doctors/:doctorId/reset-password",
+  authenticate,
+  authorize("clinic_admin", "receptionist"),
+  requireClinicStaffAccess,
+  requireClinicPermission("doctors.manage"),
+  resetDoctorPasswordRules,
+  handleDoctorValidationErrors,
+  resetDoctorPassword
+);
 router.delete(
   "/:clinicId/doctors/:doctorId",
   authenticate,
-  authorize("clinic_admin"),
-  requireClinicAdminAccess,
+  authorize("clinic_admin", "receptionist"),
+  requireClinicStaffAccess,
   requireClinicPermission("doctors.manage"),
   clinicDoctorParamRules,
   handleDoctorValidationErrors,

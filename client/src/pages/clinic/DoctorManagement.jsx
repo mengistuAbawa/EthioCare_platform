@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { CircleUserRound, Plus, Stethoscope, UserRoundX } from "lucide-react";
+import { CircleUserRound, KeyRound, Plus, Stethoscope, UserRoundX } from "lucide-react";
 import { useParams } from "react-router-dom";
 import { useAuth } from "../../context/useAuth";
 import ErrorState from "../../components/dashboard/ErrorState";
@@ -7,16 +7,29 @@ import LoadingState from "../../components/dashboard/LoadingState";
 import { Button, Card, PageHeader, SearchInput, StatusBadge } from "../../components/ui/Primitives";
 import {
   createDoctorProfile,
+  createDoctorAccount,
   deactivateClinicDoctor,
   getClinicDoctorServices,
   getClinicDoctors,
   getDoctorCandidates,
   updateClinicDoctor,
   updateClinicDoctorServices,
+  resetDoctorPassword,
 } from "../../services/doctorService";
 
 const initialCreateForm = {
   user_id: "",
+  specialty: "",
+  qualifications: "",
+  license_number: "",
+  consultation_fee: "0",
+};
+
+const initialAccountForm = {
+  full_name: "",
+  email: "",
+  phone: "",
+  password: "",
   specialty: "",
   qualifications: "",
   license_number: "",
@@ -33,10 +46,12 @@ const profileFields = [
 export default function DoctorManagement() {
   const { clinicId } = useParams();
   const { user } = useAuth();
-  const isManager = user?.role === "clinic_admin";
+  const canManage = ["clinic_admin", "receptionist"].includes(user?.role);
   const [doctors, setDoctors] = useState([]);
   const [candidates, setCandidates] = useState([]);
   const [createForm, setCreateForm] = useState(initialCreateForm);
+  const [accountForm, setAccountForm] = useState(initialAccountForm);
+  const [passwordForm, setPasswordForm] = useState({ new_password: "", confirm_password: "" });
   const [doctorSearch, setDoctorSearch] = useState("");
   const [selectedId, setSelectedId] = useState("");
   const selectedDoctor = useMemo(
@@ -61,7 +76,7 @@ export default function DoctorManagement() {
   const load = async () => {
     try {
       const doctorResponse = await getClinicDoctors(clinicId);
-      const candidateResponse = isManager ? await getDoctorCandidates(clinicId) : null;
+      const candidateResponse = canManage ? await getDoctorCandidates(clinicId) : null;
       const nextDoctors = doctorResponse.data?.data?.doctors || [];
       setDoctors(nextDoctors);
       setCandidates(candidateResponse?.data?.data?.candidates || []);
@@ -78,7 +93,7 @@ export default function DoctorManagement() {
     const fetchClinicDoctors = async () => {
       try {
         const doctorResponse = await getClinicDoctors(clinicId);
-        const candidateResponse = isManager ? await getDoctorCandidates(clinicId) : null;
+        const candidateResponse = canManage ? await getDoctorCandidates(clinicId) : null;
         if (!active) return;
         setDoctors(doctorResponse.data?.data?.doctors || []);
         setCandidates(candidateResponse?.data?.data?.candidates || []);
@@ -94,7 +109,7 @@ export default function DoctorManagement() {
     return () => {
       active = false;
     };
-  }, [clinicId, isManager]);
+  }, [clinicId, canManage]);
 
   const selectDoctor = async (doctor) => {
     setSelectedId(String(doctor.id));
@@ -110,7 +125,7 @@ export default function DoctorManagement() {
       is_profile_approved: doctor.is_profile_approved,
     });
 
-    if (!isManager) return;
+    if (!canManage) return;
 
     try {
       const response = await getClinicDoctorServices(clinicId, doctor.id);
@@ -129,6 +144,11 @@ export default function DoctorManagement() {
   const updateCreateForm = (event) => {
     const { name, value } = event.target;
     setCreateForm((current) => ({ ...current, [name]: value }));
+  };
+
+  const updateAccountForm = (event) => {
+    const { name, value } = event.target;
+    setAccountForm((current) => ({ ...current, [name]: value }));
   };
 
   const updateEditForm = (event) => {
@@ -158,6 +178,55 @@ export default function DoctorManagement() {
       await load();
     } catch (submitError) {
       setError(submitError.response?.data?.message || "Unable to create the doctor profile.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const submitDoctorAccount = async (event) => {
+    event.preventDefault();
+    if (accountForm.password.length < 12) {
+      setError("The initial doctor password must be at least 12 characters.");
+      return;
+    }
+    setSubmitting(true);
+    setError("");
+    setNotice("");
+    try {
+      await createDoctorAccount(clinicId, {
+        ...accountForm,
+        consultation_fee: Number(accountForm.consultation_fee),
+      });
+      setAccountForm(initialAccountForm);
+      announce("Doctor account created and allocated to this clinic.");
+      await load();
+    } catch (submitError) {
+      setError(submitError.response?.data?.message || "Unable to create the doctor account.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const submitPasswordReset = async (event) => {
+    event.preventDefault();
+    if (!selectedDoctor) return;
+    if (passwordForm.new_password.length < 12) {
+      setError("The new password must be at least 12 characters.");
+      return;
+    }
+    if (passwordForm.new_password !== passwordForm.confirm_password) {
+      setError("Password confirmation does not match.");
+      return;
+    }
+    setSubmitting(true);
+    setError("");
+    setNotice("");
+    try {
+      await resetDoctorPassword(clinicId, selectedDoctor.id, passwordForm);
+      setPasswordForm({ new_password: "", confirm_password: "" });
+      announce("Doctor password reset successfully.");
+    } catch (submitError) {
+      setError(submitError.response?.data?.message || "Unable to reset the doctor password.");
     } finally {
       setSubmitting(false);
     }
@@ -213,7 +282,7 @@ export default function DoctorManagement() {
   const removeAssignment = async () => {
     if (!selectedDoctor) return;
     const confirmed = window.confirm(
-      `Deactivate ${selectedDoctor.name}'s clinic assignment? The account and historical records will be preserved.`
+      `Delete ${selectedDoctor.name}'s clinic assignment? The doctor account and historical records will be preserved.`
     );
     if (!confirmed) return;
 
@@ -245,7 +314,7 @@ export default function DoctorManagement() {
       <div className="mx-auto max-w-7xl">
         <PageHeader
           title="Doctors"
-          description={isManager
+          description={canManage
             ? "Manage authorized doctor profiles and services for this clinic."
             : "Browse doctor information for your clinic."}
           className="mb-8"
@@ -290,7 +359,7 @@ export default function DoctorManagement() {
                         <span className="min-w-0 flex-1">
                           <span className="block font-semibold text-slate-900">{doctor.name}</span>
                           <span className="mt-1 block text-sm text-slate-600">{doctor.specialty}</span>
-                          {isManager && doctor.email ? (
+                          {canManage && doctor.email ? (
                             <span className="mt-1 block truncate text-xs text-slate-500">{doctor.email}</span>
                           ) : null}
                         </span>
@@ -311,13 +380,13 @@ export default function DoctorManagement() {
           </Card>
 
           <div className="space-y-6">
-            {isManager ? (
+            {canManage ? (
               <Card as="section">
                 <h2 className="flex items-center gap-2 text-xl font-bold text-slate-900">
                   <Plus size={20} className="text-teal-700" /> Link existing doctor account
                 </h2>
                 <p className="mt-2 text-sm text-slate-600">
-                  New doctor accounts require a secure invitation/password-setup service, which this project does not currently provide.
+                  Allocate an existing active doctor account to this clinic.
                 </p>
                 <form onSubmit={submitCreate} className="mt-5 grid gap-4 sm:grid-cols-2">
                   <label className="text-sm font-medium text-slate-700 sm:col-span-2">
@@ -372,7 +441,53 @@ export default function DoctorManagement() {
               </Card>
             ) : null}
 
-            {selectedDoctor && isManager ? (
+            {canManage ? (
+              <Card as="section">
+                <h2 className="flex items-center gap-2 text-xl font-bold text-slate-900">
+                  <Plus size={20} className="text-teal-700" /> Add new doctor account
+                </h2>
+                <p className="mt-2 text-sm text-slate-600">
+                  Create the login account and doctor profile, then allocate both to this clinic.
+                </p>
+                <form onSubmit={submitDoctorAccount} className="mt-5 grid gap-4 sm:grid-cols-2">
+                  {[
+                    ["full_name", "Full name", "text", ""],
+                    ["email", "Email address", "email", ""],
+                    ["phone", "Phone number", "tel", ""],
+                    ["password", "Initial password", "password", ""],
+                    ["specialty", "Specialty", "text", ""],
+                    ["license_number", "License number", "text", ""],
+                    ["consultation_fee", "Consultation fee (ETB)", "number", "0"],
+                  ].map(([name, label, type, placeholder]) => (
+                    <label key={name} className="text-sm font-medium text-slate-700">
+                      {label}
+                      <input
+                        required={name !== "phone"}
+                        type={type}
+                        name={name}
+                        placeholder={placeholder}
+                        value={accountForm[name]}
+                        onChange={updateAccountForm}
+                        minLength={["full_name", "specialty", "license_number"].includes(name) ? 2 : undefined}
+                        maxLength={name === "email" ? 254 : 120}
+                        min={name === "consultation_fee" ? 0 : undefined}
+                        step={name === "consultation_fee" ? 0.01 : undefined}
+                        className="mt-1.5 w-full rounded-xl border border-slate-300 px-3 py-2.5"
+                      />
+                    </label>
+                  ))}
+                  <label className="text-sm font-medium text-slate-700 sm:col-span-2">
+                    Qualifications
+                    <textarea maxLength="2000" rows="2" name="qualifications" value={accountForm.qualifications} onChange={updateAccountForm} className="mt-1.5 w-full rounded-xl border border-slate-300 px-3 py-2.5" />
+                  </label>
+                  <Button type="submit" loading={submitting} disabled={submitting} className="sm:col-span-2">
+                    Create doctor account
+                  </Button>
+                </form>
+              </Card>
+            ) : null}
+
+            {selectedDoctor && canManage ? (
               <>
                 <Card as="section">
                   <div className="flex flex-wrap items-start justify-between gap-3">
@@ -424,6 +539,41 @@ export default function DoctorManagement() {
                       Save profile
                     </Button>
                   </form>
+                  <form onSubmit={submitPasswordReset} className="mt-5 grid gap-4 border-t border-slate-200 pt-5 sm:grid-cols-2">
+                    <div className="sm:col-span-2">
+                      <h3 className="flex items-center gap-2 font-semibold text-slate-900">
+                        <KeyRound size={17} /> Reset doctor password
+                      </h3>
+                      <p className="mt-1 text-sm text-slate-600">Set a new password with at least 12 characters.</p>
+                    </div>
+                    <label className="text-sm font-medium text-slate-700">
+                      New password
+                      <input
+                        required
+                        type="password"
+                        minLength={12}
+                        autoComplete="new-password"
+                        value={passwordForm.new_password}
+                        onChange={(event) => setPasswordForm((current) => ({ ...current, new_password: event.target.value }))}
+                        className="mt-1.5 w-full rounded-xl border border-slate-300 px-3 py-2.5"
+                      />
+                    </label>
+                    <label className="text-sm font-medium text-slate-700">
+                      Confirm new password
+                      <input
+                        required
+                        type="password"
+                        minLength={12}
+                        autoComplete="new-password"
+                        value={passwordForm.confirm_password}
+                        onChange={(event) => setPasswordForm((current) => ({ ...current, confirm_password: event.target.value }))}
+                        className="mt-1.5 w-full rounded-xl border border-slate-300 px-3 py-2.5"
+                      />
+                    </label>
+                    <Button type="submit" variant="secondary" loading={submitting} disabled={submitting}>
+                      Reset password
+                    </Button>
+                  </form>
                   <Button
                     type="button"
                     variant="danger"
@@ -431,7 +581,7 @@ export default function DoctorManagement() {
                     onClick={removeAssignment}
                     className="mt-4"
                   >
-                    <UserRoundX size={17} /> Deactivate clinic assignment
+                    <UserRoundX size={17} /> Delete doctor assignment
                   </Button>
                 </Card>
 
@@ -482,7 +632,7 @@ export default function DoctorManagement() {
               </Card>
             ) : (
               <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center text-slate-600">
-                Select a doctor to view {isManager ? "or manage" : ""} their clinic profile.
+                Select a doctor to view {canManage ? "or manage" : ""} their clinic profile.
               </div>
             )}
           </div>

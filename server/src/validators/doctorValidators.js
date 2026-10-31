@@ -61,6 +61,41 @@ const createDoctorRules = [
     .withMessage("Consultation fee must be a non-negative number."),
 ];
 
+const createDoctorAccountRules = [
+  positiveId("clinicId"),
+  body().custom((value) => {
+    const allowed = [
+      "full_name", "email", "phone", "password", "specialty",
+      "qualifications", "license_number", "consultation_fee",
+    ];
+    if (Object.keys(value || {}).some((field) => !allowed.includes(field))) {
+      throw new Error("Provide only supported doctor account fields.");
+    }
+    return true;
+  }),
+  body("full_name").isString().trim().isLength({ min: 2, max: 120 }),
+  body("email").isEmail().normalizeEmail(),
+  body("phone").optional({ values: "falsy" }).isString().trim().isLength({ min: 7, max: 30 }),
+  body("password").isString().isLength({ min: 12, max: 128 }),
+  body("specialty").isString().trim().isLength({ min: 2, max: 120 }),
+  body("qualifications").optional({ values: "null" }).isString().isLength({ max: 2000 }),
+  body("license_number").isString().trim().isLength({ min: 2, max: 120 }),
+  body("consultation_fee").optional().isFloat({ min: 0, max: 9999999999.99 }).toFloat(),
+];
+
+const resetDoctorPasswordRules = [
+  positiveId("clinicId"),
+  positiveId("doctorId"),
+  body("new_password")
+    .isString()
+    .isLength({ min: 12, max: 128 })
+    .withMessage("New password must be between 12 and 128 characters."),
+  body("confirm_password")
+    .isString()
+    .custom((value, { req }) => value === req.body.new_password)
+    .withMessage("Password confirmation does not match."),
+];
+
 const clinicDoctorParamRules = [positiveId("clinicId"), positiveId("doctorId")];
 const doctorIdRules = [positiveId("id")];
 
@@ -124,6 +159,8 @@ module.exports = {
   publicDoctorQueryRules,
   doctorAuditQueryRules,
   createDoctorRules,
+  createDoctorAccountRules,
+  resetDoctorPasswordRules,
   clinicDoctorParamRules,
   doctorIdRules,
   updateDoctorRules,

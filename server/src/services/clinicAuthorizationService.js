@@ -8,7 +8,7 @@ const ROLE_PERMISSIONS = Object.freeze({
     "appointments.read_assigned", "appointments.manage_assigned",
     "patients.read_assigned", "assessments.read_assigned", "assessments.manage_assigned",
   ]),
-  receptionist: new Set(["appointments.manage", "patients.read", "doctors.read"]),
+  receptionist: new Set(["appointments.manage", "patients.read", "doctors.read", "doctors.manage"]),
   patient: new Set(["appointments.read_own", "assessments.read_own", "assessments.manage_own"]),
 });
 

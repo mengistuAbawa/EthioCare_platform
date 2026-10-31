@@ -16,6 +16,12 @@ export const getDoctorCandidates = (clinicId) =>
 export const createDoctorProfile = (clinicId, payload) =>
   api.post(`/clinics/${clinicId}/doctors`, payload);
 
+export const createDoctorAccount = (clinicId, payload) =>
+  api.post(`/clinics/${clinicId}/doctors/account`, payload);
+
+export const resetDoctorPassword = (clinicId, doctorId, payload) =>
+  api.patch(`/clinics/${clinicId}/doctors/${doctorId}/reset-password`, payload);
+
 export const getClinicDoctorServices = (clinicId, doctorId) =>
   api.get(`/clinics/${clinicId}/doctors/${doctorId}/services`);
 

@@ -1,4 +1,5 @@
 const pool = require("../config/db");
+const bcrypt = require("bcryptjs");
 
 const publicDoctorFrom = `
   SELECT d.id,
@@ -195,6 +196,120 @@ const getClinicDoctorCandidates = async (req, res) => {
   }
 };
 
+const createDoctorAccountAndProfile = async (req, res) => {
+  try {
+    const doctor = await withTransaction(async (client) => {
+      const clinic = await client.query(
+        `SELECT id, verification_status, operational_status
+           FROM clinics WHERE id = $1 FOR SHARE`,
+        [req.params.clinicId]
+      );
+      if (!clinic.rowCount) {
+        const error = new Error("Clinic not found.");
+        error.status = 404;
+        throw error;
+      }
+      if (clinic.rows[0].verification_status !== "verified" || clinic.rows[0].operational_status === "suspended") {
+        const error = new Error("Doctors can be assigned only to an active, verified clinic.");
+        error.status = 409;
+        throw error;
+      }
+
+      const passwordHash = await bcrypt.hash(req.body.password, 12);
+      const userResult = await client.query(
+        `INSERT INTO users
+           (full_name, email, password_hash, phone, role, is_active, is_verified)
+         VALUES ($1, $2, $3, $4, 'doctor', TRUE, TRUE)
+         RETURNING id`,
+        [
+          req.body.full_name.trim(),
+          req.body.email.trim().toLowerCase(),
+          passwordHash,
+          req.body.phone?.trim() || null,
+        ]
+      );
+
+      const profileResult = await client.query(
+        `INSERT INTO doctors
+           (user_id, clinic_id, specialty, qualifications, license_number,
+            consultation_fee, is_available, is_active, is_profile_approved)
+         VALUES ($1, $2, $3, $4, $5, $6, TRUE, TRUE, TRUE)
+         RETURNING id, user_id, clinic_id, specialty, qualifications,
+                   license_number, consultation_fee, is_available, is_active,
+                   is_profile_approved, created_at, updated_at`,
+        [
+          userResult.rows[0].id,
+          req.params.clinicId,
+          req.body.specialty.trim(),
+          req.body.qualifications?.trim() || null,
+          req.body.license_number.trim(),
+          req.body.consultation_fee ?? 0,
+        ]
+      );
+
+      await writeAudit(client, {
+        actorId: req.user.id,
+        action: "doctor_account_and_profile_created",
+        entityId: profileResult.rows[0].id,
+        details: {
+          clinic_id: String(req.params.clinicId),
+          user_id: String(userResult.rows[0].id),
+        },
+      });
+      return profileResult.rows[0];
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: "Doctor account created and allocated to this clinic.",
+      data: { doctor },
+    });
+  } catch (error) {
+    if (error.status) return res.status(error.status).json({ success: false, message: error.message });
+    return sendDatabaseFailure(error, res, "Unable to create the doctor account and profile.");
+  }
+};
+
+const resetDoctorPassword = async (req, res) => {
+  try {
+    await withTransaction(async (client) => {
+      const doctor = await client.query(
+        `SELECT d.user_id, u.email
+           FROM doctors d
+           JOIN users u ON u.id = d.user_id
+          WHERE d.id = $1 AND d.clinic_id = $2 AND u.role = 'doctor'
+          FOR SHARE`,
+        [req.params.doctorId, req.params.clinicId]
+      );
+      if (!doctor.rowCount) {
+        const error = new Error("Doctor profile not found for this clinic.");
+        error.status = 404;
+        throw error;
+      }
+
+      const passwordHash = await bcrypt.hash(req.body.new_password, 12);
+      await client.query(
+        "UPDATE users SET password_hash = $1, updated_at = NOW() WHERE id = $2 AND is_active = TRUE",
+        [passwordHash, doctor.rows[0].user_id]
+      );
+      await writeAudit(client, {
+        actorId: req.user.id,
+        action: "doctor_password_reset",
+        entityId: req.params.doctorId,
+        details: { clinic_id: String(req.params.clinicId), email: doctor.rows[0].email },
+      });
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "The doctor password was reset.",
+    });
+  } catch (error) {
+    if (error.status) return res.status(error.status).json({ success: false, message: error.message });
+    return sendDatabaseFailure(error, res, "Unable to reset the doctor password.");
+  }
+};
+
 const createDoctorProfile = async (req, res) => {
   try {
     const doctor = await withTransaction(async (client) => {
@@ -278,7 +393,7 @@ const createDoctorProfile = async (req, res) => {
 };
 
 const getClinicDoctors = async (req, res) => {
-  const isManager = ["clinic_admin", "system_admin"].includes(req.user.role);
+  const isManager = ["clinic_admin", "receptionist", "system_admin"].includes(req.user.role);
   const filters = ["d.clinic_id = $1"];
 
   if (!isManager) filters.push("d.is_active = TRUE", "d.is_available = TRUE", "d.is_profile_approved = TRUE");
@@ -305,7 +420,7 @@ const getClinicDoctors = async (req, res) => {
 };
 
 const getDoctorById = async (req, res) => {
-  const isManager = ["clinic_admin", "system_admin"].includes(req.user.role);
+  const isManager = ["clinic_admin", "receptionist", "system_admin"].includes(req.user.role);
 
   try {
     const result = await pool.query(
@@ -748,6 +863,7 @@ module.exports = {
   getPublicDoctors,
   getPublicDoctorById,
   getClinicDoctorCandidates,
+  createDoctorAccountAndProfile,
   createDoctorProfile,
   getClinicDoctors,
   getDoctorById,
@@ -755,6 +871,7 @@ module.exports = {
   updateMyDoctorProfile,
   updateDoctorProfile,
   removeDoctorFromClinic,
+  resetDoctorPassword,
   getDoctorServices,
   updateDoctorServices,
   getDoctorStatistics,
