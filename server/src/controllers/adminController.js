@@ -518,6 +518,46 @@ const listAuditLogs = async (req, res) => {
   }
 };
 
+const deleteAuditLog = async (req, res) => {
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    const original = await client.query(
+      `SELECT id, action, entity, entity_id, details, created_at
+         FROM audit_logs
+        WHERE id = $1`,
+      [req.params.logId]
+    );
+    if (!original.rowCount) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({ success: false, message: "Audit log not found." });
+    }
+
+    await client.query("DELETE FROM audit_logs WHERE id = $1", [req.params.logId]);
+    await writeAuditLog(client, {
+      actorId: req.user.id,
+      action: "audit_log_deleted",
+      entity: "audit_logs",
+      entityId: req.params.logId,
+      ipAddress: req.ip,
+      details: {
+        deleted_log: original.rows[0],
+      },
+    });
+    await client.query("COMMIT");
+    return res.status(200).json({
+      success: true,
+      message: "Audit log deleted.",
+      data: { deleted_log_id: Number(req.params.logId) },
+    });
+  } catch (error) {
+    await client.query("ROLLBACK");
+    return sendDatabaseFailure(error, res, "Unable to delete the audit log.");
+  } finally {
+    client.release();
+  }
+};
+
 const listNotifications = async (req, res) => {
   const { page, limit, offset } = getPagination(req.query);
   try {
@@ -574,6 +614,7 @@ module.exports = {
   createManagedUser,
   listAppointments,
   listAuditLogs,
+  deleteAuditLog,
   listNotifications,
   markNotificationRead,
 };

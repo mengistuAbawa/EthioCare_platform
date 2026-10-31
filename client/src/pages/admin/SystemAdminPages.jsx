@@ -3,6 +3,7 @@ import { Link, useLocation, useParams } from "react-router-dom";
 import {
   getAdminAppointments,
   getAdminAuditLogs,
+  deleteAdminAuditLog,
   getAdminClinic,
   getAdminClinics,
   getAdminNotifications,
@@ -16,7 +17,7 @@ import {
 import EmptyState from "../../components/dashboard/EmptyState";
 import ErrorState from "../../components/dashboard/ErrorState";
 import LoadingState from "../../components/dashboard/LoadingState";
-import { Button, PageHeader, StatusBadge as UiStatusBadge } from "../../components/ui/Primitives";
+import { Button, ConfirmationDialog, PageHeader, StatusBadge as UiStatusBadge } from "../../components/ui/Primitives";
 
 const panelClass = "ui-card p-5 sm:p-6";
 const inputClass = "ui-control w-full text-sm";
@@ -670,6 +671,9 @@ export function AuditLogsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [reload, setReload] = useState(0);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
 
   const load = useCallback(async () => {
     try {
@@ -686,9 +690,25 @@ export function AuditLogsPage() {
   }, [filters, page]);
   useEffect(() => { void Promise.resolve().then(load); }, [load, reload]);
 
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    setDeleteError("");
+    try {
+      await deleteAdminAuditLog(deleteTarget.id);
+      setDeleteTarget(null);
+      setLoading(true);
+      setReload((current) => current + 1);
+    } catch (requestError) {
+      setDeleteError(messageFrom(requestError, "Unable to delete the audit log."));
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   return (
     <section className={panelClass}>
-      <PageTitle title="Audit logs" description="Immutable administrative and security history. This interface is read-only." />
+      <PageTitle title="Audit logs" description="Review administrative and security history. Reviewed entries may be deleted by an authorized system administrator." />
       <form className="mb-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-5" onSubmit={(event) => { event.preventDefault(); setLoading(true); setError(""); setPage(1); setReload((current) => current + 1); }}>
         <label><span className="sr-only">Actor user ID</span><input type="number" min="1" className={inputClass} placeholder="Actor user ID" value={filters.actor_id || ""} onChange={(event) => setFilters((current) => ({ ...current, actor_id: event.target.value }))} /></label>
         <label><span className="sr-only">Action</span><input className={inputClass} placeholder="Action contains..." value={filters.action || ""} onChange={(event) => setFilters((current) => ({ ...current, action: event.target.value }))} /></label>
@@ -698,17 +718,41 @@ export function AuditLogsPage() {
         <button type="submit" className={`${buttonClass} sm:col-span-2 xl:col-span-5`}>Apply filters</button>
       </form>
       {error && <ErrorState message={error} onRetry={() => { setLoading(true); setError(""); setReload((current) => current + 1); }} className="mb-4" />}
+      {deleteError && <ErrorState message={deleteError} className="mb-4" />}
       {loading ? <LoadingState label="Loading audit events..." /> : events.length === 0 ? <EmptyState title="No audit events found" description="The audit log is empty for these filters." /> : (
         <div className="space-y-3">{events.map((event) => (
           <article key={event.id} className="rounded-xl border border-slate-200 p-4">
             <div className="flex flex-col justify-between gap-2 sm:flex-row">
               <div><h3 className="font-semibold text-slate-900">{humanize(event.action)}</h3><p className="text-sm text-slate-600">{event.actor_name || "Deleted account"} · {humanize(event.actor_role || "unknown role")} · {event.entity} {event.entity_id ? `#${event.entity_id}` : ""}</p></div>
-              <time className="shrink-0 text-xs text-slate-500" dateTime={event.created_at}>{formatDate(event.created_at)}</time>
+              <div className="flex shrink-0 items-start gap-2">
+                <time className="pt-2 text-xs text-slate-500" dateTime={event.created_at}>{formatDate(event.created_at)}</time>
+                <Button
+                  variant="danger"
+                  className="min-h-9 px-3 py-2 text-xs"
+                  onClick={() => {
+                    setDeleteError("");
+                    setDeleteTarget(event);
+                  }}
+                >
+                  Delete
+                </Button>
+              </div>
             </div>
             {event.details && Object.keys(event.details).length > 0 && <pre className="mt-2 overflow-x-auto rounded-lg bg-slate-50 p-2 text-xs text-slate-600">{JSON.stringify(event.details, null, 2)}</pre>}
           </article>
         ))}<AdminPagination pagination={pagination} onPageChange={setPage} /></div>
       )}
+      <ConfirmationDialog
+        open={Boolean(deleteTarget)}
+        title="Delete audit log?"
+        description={deleteTarget ? `This permanently removes the ${humanize(deleteTarget.action)} event from ${formatDate(deleteTarget.created_at)}. The deletion will be recorded as a new audit event.` : ""}
+        confirmLabel="Delete log"
+        loading={deleting}
+        onConfirm={handleDelete}
+        onCancel={() => {
+          if (!deleting) setDeleteTarget(null);
+        }}
+      />
     </section>
   );
 }

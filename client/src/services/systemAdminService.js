@@ -13,6 +13,7 @@ export const getAdminUsers = (params) => api.get("/admin/users", { params });
 export const createAdminManagedUser = (payload) => api.post("/admin/users", payload);
 export const getAdminAppointments = (params) => api.get("/admin/appointments", { params });
 export const getAdminAuditLogs = (params) => api.get("/admin/audit-logs", { params });
+export const deleteAdminAuditLog = (logId) => api.delete(`/admin/audit-logs/${logId}`);
 export const getAdminNotifications = (params) => api.get("/admin/notifications", { params });
 export const markAdminNotificationRead = (notificationId) =>
   api.patch(`/admin/notifications/${notificationId}/read`);

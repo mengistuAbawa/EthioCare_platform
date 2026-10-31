@@ -12,6 +12,7 @@ const {
   createManagedUser,
   listAppointments,
   listAuditLogs,
+  deleteAuditLog,
   listNotifications,
   markNotificationRead,
 } = require("../controllers/adminController");
@@ -30,6 +31,7 @@ const {
   createManagedUserRules,
   appointmentListRules,
   auditListRules,
+  auditLogParamRules,
   paginationRules,
   notificationParamRules,
 } = require("../validators/adminValidators");
@@ -49,6 +51,7 @@ router.get("/users", userListRules, handleAdminValidationErrors, listUsers);
 router.post("/users", createManagedUserRules, handleAdminValidationErrors, createManagedUser);
 router.get("/appointments", appointmentListRules, handleAdminValidationErrors, listAppointments);
 router.get("/audit-logs", auditListRules, handleAdminValidationErrors, listAuditLogs);
+router.delete("/audit-logs/:logId", auditLogParamRules, handleAdminValidationErrors, deleteAuditLog);
 router.get("/notifications", paginationRules, handleAdminValidationErrors, listNotifications);
 router.patch(
   "/notifications/:notificationId/read",
