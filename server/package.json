@@ -11,6 +11,7 @@
     "verify:phase2": "node scripts/verifyPhase2.js",
     "create:test-admins": "node scripts/createTestAdmins.js",
     "create:system-admin": "node scripts/createSystemAdmin.js",
+    "reset:system-admin-password": "node scripts/resetSystemAdminPassword.js",
     "worker:assessments": "node src/jobs/assessmentProcessingWorker.js"
   },
   "keywords": [],

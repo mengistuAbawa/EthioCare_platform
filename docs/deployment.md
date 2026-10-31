@@ -68,3 +68,13 @@ npm run create:system-admin
 5. Sign in through the deployed Vercel frontend at the administrator login route.
 
 The bootstrap command refuses to run if any System Admin account already exists, so it cannot be used repeatedly to create additional privileged accounts. The local command `npm run create:test-admins` remains restricted to `development` and `test` environments and must not be used for production.
+
+## Reset an existing System Admin password
+
+If a System Admin account already exists but the email or password cannot be verified, open the Render API service Shell and run:
+
+```sh
+npm run reset:system-admin-password
+```
+
+Enter the existing System Admin email and a new password of at least 12 characters. The command updates only an existing account with the `system_admin` role, activates it, marks it verified, and creates a new bcrypt password hash. It does not create a new account or expose an administrator password endpoint.
